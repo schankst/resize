@@ -14,9 +14,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   module proxy still serves its cached copy), and `v1.0.2` is the last release with the original
   module path.
 - `docs/revival-analysis.md` is now in English.
+- Benchmark helpers moved out of `resize_test.go` into `bench_test.go`; the old single-size
+  `Benchmark_*` functions are superseded by the table-driven sub-benchmarks.
 
 ### Added
 
+- `bench_test.go`: `BenchmarkResize` covers `RGBA`, `NRGBA`, `Gray` and `YCbCr 4:2:0` with
+  `NearestNeighbor`, `Bilinear` and `Lanczos3` in both directions, plus `BenchmarkThumbnail`.
+  `docs/benchmarks.md` records the baseline and explains how to compare runs with `benchstat`.
+  Replaces the unreproducible 2016 numbers from upstream PR #43.
 - `docs/revival-analysis.md` now records what happened to each of the five open upstream pull
   requests: nothing upstream (the repository is archived and read-only), with the decision and the
   corresponding commit in this fork documented instead.
