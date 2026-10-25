@@ -1,3 +1,9 @@
+// Copyright (c) 2026, Stefan Schank <github@schank.it>
+//
+// SPDX-License-Identifier: ISC
+//
+// See the LICENSE file in the repository root for the full license text.
+
 // Command resize-measure reports the peak resident memory and wall time of a resize.
 //
 // It exists so that memory changes can be compared reproducibly: the same command run against an

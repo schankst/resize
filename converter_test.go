@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: ISC
+//
+// See the LICENSE file in the repository root for the full license text.
+
 package resize
 
 import (

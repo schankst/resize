@@ -1,3 +1,10 @@
+// Copyright (c) 2012, Jan Schlicht <jan.schlicht@gmail.com>
+// Copyright (c) 2026, Stefan Schank <github@schank.it>
+//
+// SPDX-License-Identifier: ISC
+//
+// See the LICENSE file in the repository root for the full license text.
+
 package resize
 
 import (
