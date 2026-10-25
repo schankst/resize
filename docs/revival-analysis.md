@@ -249,6 +249,14 @@ available as the last release with the original path, in case someone cannot tou
 A side note on SemVer: `v2.0.0` would be the wrong move, because Go would then require the module
 path `github.com/schankst/resize/v2` and corresponding `/v2` imports — the opposite of simple.
 
+### Decision on gamma-correct resampling
+
+Upstream PR #2 (gamma/sRGB correction) was never merged and we are not adopting it either. Gamma
+correct resampling changes the pixel values of every existing caller, so it belongs in a new API
+(new function name or an option), not in a silent behaviour change. Until then the README states
+plainly that resampling is not gamma-correct, which is what the original package did and what users
+have calibrated against for a decade.
+
 ### Implementation status (as of 2026-10-25)
 
 | Phase | Content | Status |
@@ -256,7 +264,7 @@ path `github.com/schankst/resize/v2` and corresponding `/v2` imports — the opp
 | P0 | `go.mod` with its own module path, tags up to `v1.0.3`, ISC title, CI (test/race/staticcheck/govulncheck/cross-compile), README, changelog, docs | **done** |
 | P1 | Panic/overflow hardening with an additive error API, memory reduction, benchmarks | done except the transposed intermediate buffer |
 | P2 | Configurable `blur` (functional options), fast Paletted/CMYK paths | open |
-| P3 | Documentation polish, evaluate the gamma question | open |
+| P3 | Documentation polish, evaluate the gamma question | done — gamma-correct resampling stays out of scope, see above |
 
 ---
 

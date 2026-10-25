@@ -36,36 +36,38 @@ benchstat old.txt new.txt
 
 ## Results
 
+Measured after the YCbCr copy removal; see the memory section below for the before/after comparison.
+
 | Benchmark | ms/op | B/op | allocs/op |
 |---|---:|---:|---:|
-| `RGBA/down-128x128/NearestNeighbor` | 0.94 | 332,506 | 20 |
-| `RGBA/down-128x128/Bilinear` | 1.33 | 334,537 | 20 |
-| `RGBA/down-128x128/Lanczos3` | 3.29 | 342,729 | 20 |
-| `RGBA/up-1024x1024/NearestNeighbor` | 7.61 | 6,312,651 | 20 |
-| `RGBA/up-1024x1024/Bilinear` | 9.77 | 6,316,750 | 20 |
-| `RGBA/up-1024x1024/Lanczos3` | 19.29 | 6,333,132 | 20 |
-| `NRGBA/down-128x128/NearestNeighbor` | 0.92 | 332,488 | 20 |
-| `NRGBA/down-128x128/Bilinear` | 1.56 | 334,537 | 20 |
-| `NRGBA/down-128x128/Lanczos3` | 3.92 | 342,729 | 20 |
-| `NRGBA/up-1024x1024/NearestNeighbor` | 7.75 | 6,312,652 | 20 |
-| `NRGBA/up-1024x1024/Bilinear` | 10.64 | 6,316,748 | 20 |
-| `NRGBA/up-1024x1024/Lanczos3` | 20.82 | 6,333,132 | 20 |
-| `Gray/down-128x128/NearestNeighbor` | 0.78 | 86,728 | 20 |
-| `Gray/down-128x128/Bilinear` | 0.83 | 88,776 | 20 |
-| `Gray/down-128x128/Lanczos3` | 2.33 | 96,968 | 20 |
-| `Gray/up-1024x1024/NearestNeighbor` | 4.92 | 1,594,058 | 20 |
-| `Gray/up-1024x1024/Bilinear` | 5.42 | 1,598,154 | 20 |
-| `Gray/up-1024x1024/Lanczos3` | 11.62 | 1,614,538 | 20 |
-| `YCbCr420/down-128x128/NearestNeighbor` | 1.43 | 1,086,458 | 24 |
-| `YCbCr420/down-128x128/Bilinear` | 1.84 | 1,088,507 | 24 |
-| `YCbCr420/down-128x128/Lanczos3` | 3.48 | 1,096,697 | 24 |
-| `YCbCr420/up-1024x1024/NearestNeighbor` | 9.13 | 8,672,253 | 24 |
-| `YCbCr420/up-1024x1024/Bilinear` | 10.99 | 8,676,349 | 24 |
-| `YCbCr420/up-1024x1024/Lanczos3` | 18.48 | 8,692,732 | 24 |
-| `BenchmarkThumbnail/RGBA` | 3.07 | 342,728 | 20 |
-| `BenchmarkThumbnail/NRGBA` | 3.87 | 342,728 | 20 |
-| `BenchmarkThumbnail/Gray` | 2.36 | 96,968 | 20 |
-| `BenchmarkThumbnail/YCbCr420` | 3.26 | 1,096,698 | 24 |
+| `RGBA/down-128x128/NearestNeighbor` | 0.97 | 332,504 | 20 |
+| `RGBA/down-128x128/Bilinear` | 1.30 | 334,537 | 20 |
+| `RGBA/down-128x128/Lanczos3` | 3.17 | 342,730 | 20 |
+| `RGBA/up-1024x1024/NearestNeighbor` | 7.72 | 6,312,651 | 20 |
+| `RGBA/up-1024x1024/Bilinear` | 10.30 | 6,316,748 | 20 |
+| `RGBA/up-1024x1024/Lanczos3` | 19.28 | 6,333,132 | 20 |
+| `NRGBA/down-128x128/NearestNeighbor` | 0.94 | 332,488 | 20 |
+| `NRGBA/down-128x128/Bilinear` | 1.58 | 334,536 | 20 |
+| `NRGBA/down-128x128/Lanczos3` | 3.75 | 342,728 | 20 |
+| `NRGBA/up-1024x1024/NearestNeighbor` | 7.62 | 6,312,651 | 20 |
+| `NRGBA/up-1024x1024/Bilinear` | 10.58 | 6,316,748 | 20 |
+| `NRGBA/up-1024x1024/Lanczos3` | 21.35 | 6,333,131 | 20 |
+| `Gray/down-128x128/NearestNeighbor` | 0.75 | 86,728 | 20 |
+| `Gray/down-128x128/Bilinear` | 0.92 | 88,776 | 20 |
+| `Gray/down-128x128/Lanczos3` | 2.16 | 96,968 | 20 |
+| `Gray/up-1024x1024/NearestNeighbor` | 4.72 | 1,594,058 | 20 |
+| `Gray/up-1024x1024/Bilinear` | 5.32 | 1,598,154 | 20 |
+| `Gray/up-1024x1024/Lanczos3` | 11.16 | 1,614,537 | 20 |
+| `YCbCr420/down-128x128/NearestNeighbor` | 1.13 | 306,088 | 26 |
+| `YCbCr420/down-128x128/Bilinear` | 1.42 | 308,136 | 26 |
+| `YCbCr420/down-128x128/Lanczos3` | 2.96 | 316,328 | 26 |
+| `YCbCr420/up-1024x1024/NearestNeighbor` | 8.92 | 7,891,885 | 26 |
+| `YCbCr420/up-1024x1024/Bilinear` | 10.92 | 7,895,981 | 26 |
+| `YCbCr420/up-1024x1024/Lanczos3` | 18.66 | 7,912,365 | 26 |
+| `Thumbnail/RGBA` | 3.23 | 342,728 | 20 |
+| `Thumbnail/NRGBA` | 3.68 | 342,728 | 20 |
+| `Thumbnail/Gray` | 2.17 | 96,968 | 20 |
+| `Thumbnail/YCbCr420` | 3.58 | 316,328 | 26 |
 
 ## Memory
 
@@ -114,9 +116,12 @@ down and extreme aspect ratios) produced identical hashes before and after.
   1024×1024 costs 5–21 ms, because the work scales with destination pixels.
 - **`Gray` is the cheapest path** (1 byte per pixel, fewer cache lines): 0.8 ms versus 0.9–1.4 ms
   for 4-byte formats on downscale.
-- **`YCbCr420` pays for its conversion.** Decoded JPEGs arrive as subsampled YCbCr, and the package
-  copies the whole image into an interleaved `ycc` buffer: ~1.09 MB allocated for a 512×512 source
-  versus ~0.33 MB for RGBA. This is the memory issue tracked in issue #2.
-- **Allocations are constant** (20 per call for 8-bit formats, 24 for YCbCr) because each call
-  allocates the intermediate and result buffers once, independent of `b.N`. Peak memory, not
-  allocation count, is the thing to improve.
+- **`YCbCr420` no longer pays for a full copy.** Decoded JPEGs arrive as subsampled YCbCr. Rows are
+  expanded on demand, so a 512×512 source needs ~0.31 MB per operation instead of the ~1.09 MB the
+  old full-image `ycc` buffer required. Downscaling is now in the same range as RGBA.
+- **Upscaling costs `source + 2 × destination`.** At 1024×1024 the transposed intermediate and the
+  result dominate: ~7.9 MB for `YCbCr420`, ~6.3 MB for RGBA, ~1.6 MB for `Gray`. Removing that
+  intermediate is the next memory target.
+- **Allocations are constant** — 20 per call for the 8-bit formats, 26 for YCbCr (two scratch rows
+  for the on-demand chroma expansion) — because each call allocates its buffers once, independent
+  of `b.N`. Peak memory, not allocation count, is what matters.

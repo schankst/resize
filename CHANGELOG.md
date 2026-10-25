@@ -7,70 +7,54 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `ResizeE` and `ThumbnailE`: same behaviour as `Resize` and `Thumbnail`, but they return an error
+  instead of panicking. `Resize`/`Thumbnail` are thin wrappers that panic with that error, so
+  existing call sites behave as before while new code can handle the cases. Includes the
+  `ErrNilImage` and `ErrInvalidDimensions` sentinels and the `MaxDimension` limit.
+- `examples/resize`: a complete program that decodes, resizes and re-encodes an image, including
+  flattening transparency for JPEG output. Built by CI as part of `go build ./...`.
+- `cmd/resize-measure`: reports peak RSS (`VmHWM`) and time for a resize scenario, so memory changes
+  can be compared between checkouts. Documented in `docs/benchmarks.md`; not part of CI.
+- `bench_test.go` and `docs/benchmarks.md`: a reproducible baseline across four image types, three
+  kernels and both directions, plus how to compare runs with `benchstat`. Replaces the
+  unreproducible 2016 numbers from upstream PR #43.
+- Table-driven test matrix covering every input type (`RGBA`, `NRGBA`, `RGBA64`, `NRGBA64`, `Gray`,
+  `Gray16`, all six `YCbCr` subsampling ratios, `Paletted`, `CMYK` and a generic `image.Image`) with
+  every kernel and four directions. Statement coverage went from 63 % to 98 %.
+- `FuzzResize`, which already found one real defect (see below). The triggering seed is kept in
+  `testdata/fuzz/FuzzResize/`.
+- `testdata/ycbcr_golden.txt`: pixel hashes for every YCbCr subsample ratio × kernel × direction,
+  used to prove that the memory work did not change a single pixel.
+
 ### Changed
 
 - YCbCr inputs are no longer expanded into a full-size interleaved `ycc` buffer (3 bytes per pixel
-  of the source) before filtering. Rows are expanded on demand while filtering, which removes the
-  largest single allocation of the package. Peak RSS for a 24 MP JPEG resized to 1200×800 drops from
-  125.6 MiB to 56.9 MiB, and from 737.7 MiB to 193.0 MiB with eight parallel calls. Pixel output is
-  unchanged, pinned by `testdata/ycbcr_golden.txt`.
-- The parallel pass over YCbCr sources is split along source rows instead of destination columns, so
-  each row is expanded exactly once.
-
-### Added
-
-- `cmd/resize-measure`: reports peak RSS (`VmHWM`) and time for a resize scenario, so memory changes
-  can be compared between checkouts. Documented in `docs/benchmarks.md`; not part of CI.
+  of the source) before filtering; rows are expanded on demand. Peak RSS for a 24 MP JPEG resized to
+  1200×800 drops from 125.6 MiB to 56.9 MiB, and from 737.7 MiB to 193.0 MiB with eight parallel
+  calls. The parallel pass is now split along source rows, so each row is expanded exactly once.
+- License headers in all source files reduced to copyright, `SPDX-License-Identifier: ISC` and a
+  pointer to `LICENSE`, replacing eight copies of the full ISC text. `LICENSE` now also credits
+  Charlie Vieth (`ycc.go`, `nearest.go`) and Stefan Schank (this fork).
+- `README.md` rewritten for the fork: unversioned `go get`, which releases declare which module
+  path, supported and unsupported formats, fast paths versus the generic fallback, decoder import
+  gotchas, metadata and alpha semantics, error handling, memory characteristics and alternatives.
+- `docs/revival-analysis.md` is now in English and records what happened to each open upstream pull
+  request.
+- CI builds only the targets this fork supports: `linux/amd64`, `linux/arm64`, `darwin/arm64`,
+  `windows/amd64`, `windows/arm64`, plus 32-bit ARM Linux with `GOARM=6` (Raspberry Pi 1, Zero) and
+  `GOARM=7` (Pi 2 v1.2+, Pi 3/4/5 with a 32-bit OS). Benchmark helpers moved out of
+  `resize_test.go` into `bench_test.go`.
 
 ### Fixed
 
 - `Resize` no longer returns an empty image when the aspect-ratio calculation rounds a dimension
   down to zero (for example a 4×32 input resized with `height` only). Such dimensions are clamped
   to `1`. Found by `FuzzResize`.
-- `README.md` documents that `NearestNeighbor` preserves `*image.NRGBA`/`*image.NRGBA64`, while the
-  filtered kernels return premultiplied `*image.RGBA`/`*image.RGBA64`.
-
-### Changed
-
-- `README.md` shows the unversioned `go get github.com/schankst/resize` and explains which releases
-  declare which module path: `v1.0.0` was moved after publication, `v1.0.1` was withdrawn (the
-  module proxy still serves its cached copy), and `v1.0.2` is the last release with the original
-  module path.
-- `docs/revival-analysis.md` is now in English.
-- Benchmark helpers moved out of `resize_test.go` into `bench_test.go`; the old single-size
-  `Benchmark_*` functions are superseded by the table-driven sub-benchmarks.
-
-### Added
-
-- `ResizeE` and `ThumbnailE`: same behaviour as `Resize` and `Thumbnail`, but they return an error
-  instead of panicking. `Resize`/`Thumbnail` are now thin wrappers that panic with that error, so
-  existing call sites behave as before while new code can handle the cases.
-- `ErrNilImage` and `ErrInvalidDimensions` sentinels (use `errors.Is`), plus `MaxDimension`
-  (`math.MaxInt32`). Dimensions above it, and combinations whose buffers would overflow `int`
-  (32-bit included), are rejected before anything is allocated.
-- `ThumbnailE` computes the aspect ratio with `uint64` arithmetic, so a huge but legitimate
-  `maxWidth`/`maxHeight` can no longer wrap around; unconstrained maxima return the input directly.
-
-### Added
-
-- Table-driven test matrix covering every input type (`RGBA`, `NRGBA`, `RGBA64`, `NRGBA64`, `Gray`,
-  `Gray16`, all six `YCbCr` subsampling ratios, `Paletted`, `CMYK` and a generic `image.Image`) with
-  every kernel and four resize directions, pinning the concrete result types, aspect-ratio
-  behaviour, non-zero `Bounds().Min`, the interpolation kernels and the internal `ycc` accessors.
-  Statement coverage is now 99 % (was 63 %).
-- `FuzzResize`: 2.2 million executions over 90 s without a crash; the seed that exposed the
-  degenerate aspect-ratio case is kept in `testdata/fuzz/FuzzResize/`.
-- `bench_test.go`: `BenchmarkResize` covers `RGBA`, `NRGBA`, `Gray` and `YCbCr 4:2:0` with
-  `NearestNeighbor`, `Bilinear` and `Lanczos3` in both directions, plus `BenchmarkThumbnail`.
-  `docs/benchmarks.md` records the baseline and explains how to compare runs with `benchstat`.
-  Replaces the unreproducible 2016 numbers from upstream PR #43.
-- `docs/revival-analysis.md` now records what happened to each of the five open upstream pull
-  requests: nothing upstream (the repository is archived and read-only), with the decision and the
-  corresponding commit in this fork documented instead.
-- CI cross-compiles only the targets this fork supports: `linux/amd64`, `linux/arm64`,
-  `darwin/arm64`, `windows/amd64`, `windows/arm64`, plus 32-bit ARM Linux with `GOARM=6` (Raspberry
-  Pi 1, Zero) and `GOARM=7` (Pi 2 v1.2+, Pi 3/4/5 with a 32-bit OS). Exotic architectures are no
-  longer built; the code remains architecture-independent.
+- Documented that `NearestNeighbor` preserves `*image.NRGBA`/`*image.NRGBA64`, while the filtered
+  kernels return premultiplied `*image.RGBA`/`*image.RGBA64`; the README claimed the latter for all
+  kernels.
 
 ## [1.0.3] - 2026-10-25
 
@@ -99,7 +83,10 @@ Documentation only; the resizing code is unchanged.
 - Removed the pkg.go.dev badge: it resolves the module path to the archived upstream, so it never
   linked to these docs.
 
-## [1.0.1] - 2026-10-25
+## [1.0.1] - 2026-10-25 — withdrawn
+
+Withdrawn: release and tag were removed because all its changes are contained in v1.0.2. The Go
+module proxy still serves the cached copy.
 
 Documentation and CI only; the resizing code is unchanged from v1.0.0.
 

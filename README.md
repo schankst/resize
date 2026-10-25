@@ -13,8 +13,8 @@ which was archived by its author in 2022. The API is unchanged; the import path 
 ## Features
 
 * Six interpolation kernels, from fast to high quality
-* Works with any `image.Image`; specialized fast paths for `RGBA`, `NRGBA`, `RGBA64`, `NRGBA64`,
-  `Gray`, `Gray16` and `YCbCr` (all subsampling ratios)
+* Works with any `image.Image`; fast paths for the common concrete types — see
+  [Supported image formats](#supported-image-formats)
 * Parallelized across `GOMAXPROCS`
 * **Zero external dependencies** — only the Go standard library
 * Pure Go: cross-compiles to every target without cgo
@@ -50,11 +50,14 @@ else.
 
 ## Usage
 
-The package provides two functions:
+The package provides two operations, each in a panicking and an error-returning flavour:
 
 ```go
 resize.Resize(width, height uint, img image.Image, interp resize.InterpolationFunction) image.Image
+resize.ResizeE(width, height uint, img image.Image, interp resize.InterpolationFunction) (image.Image, error)
+
 resize.Thumbnail(maxWidth, maxHeight uint, img image.Image, interp resize.InterpolationFunction) image.Image
+resize.ThumbnailE(maxWidth, maxHeight uint, img image.Image, interp resize.InterpolationFunction) (image.Image, error)
 ```
 
 `Resize` scales to the given dimensions. If either `width` or `height` is `0`, the value is
@@ -135,10 +138,21 @@ From fastest to slowest:
 
 For downscaling photos, `Lanczos3` or `MitchellNetravali` are the usual choices.
 
-### Decoding formats
+### Supported image formats
 
-`resize` operates on already decoded images; it does not contain image decoders. Import the
-formats you need for their side effects, otherwise `image.Decode` fails with
+`resize` neither decodes nor encodes: it operates on an already decoded `image.Image`. What you get
+therefore depends on the decoder you use. In practice:
+
+| Format | Decoder | Decoded type |
+|---|---|---|
+| JPEG | `image/jpeg` (standard library) | `*image.YCbCr`; grayscale files become `*image.Gray`, some CMYK files `*image.CMYK` |
+| PNG | `image/png` | `*image.RGBA` (truecolour), `*image.NRGBA` (with alpha), `*image.RGBA64`, `*image.NRGBA64`, `*image.Gray`, `*image.Gray16`, or `*image.Paletted` for indexed PNGs |
+| GIF | `image/gif` | `*image.Paletted` |
+| TIFF | `golang.org/x/image/tiff` | `*image.RGBA`, `*image.NRGBA`, `*image.Gray` or `*image.Paletted`, depending on the file |
+| BMP | `golang.org/x/image/bmp` | `*image.RGBA` or `*image.Paletted` |
+| WebP | `golang.org/x/image/webp` (decode only) | `*image.YCbCr` (lossy) or `*image.NRGBA` (lossless) |
+
+Decoders must be registered through blank imports, otherwise `image.Decode` fails with
 `image: unknown format`:
 
 ```go
@@ -147,14 +161,46 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	_ "golang.org/x/image/tiff" // optional, TIFF lives outside the standard library
-	_ "golang.org/x/image/bmp"  // optional
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/webp"
 )
 ```
 
-See [`nfnt/resize#68`](https://github.com/nfnt/resize/issues/68) and
-[`#71`](https://github.com/nfnt/resize/issues/71) — those reports were missing imports, not
-library bugs.
+Upstream issues [`#68`](https://github.com/nfnt/resize/issues/68) and
+[`#71`](https://github.com/nfnt/resize/issues/71) were exactly this: a missing import, not a library
+bug.
+
+#### Fast paths
+
+These concrete types are filtered directly on their pixel buffers:
+
+`*image.RGBA`, `*image.NRGBA`, `*image.RGBA64`, `*image.NRGBA64`, `*image.Gray`, `*image.Gray16`,
+and `*image.YCbCr` with any of the six subsample ratios (4:4:4, 4:2:2, 4:2:0, 4:4:0, 4:1:1, 4:1:0).
+
+Everything else — `*image.Paletted`, `*image.CMYK`, `*image.Alpha`, `*image.Alpha16`,
+`*image.NYCbCrA`, `image.Uniform` and any custom `image.Image` — is read pixel by pixel through
+`At()` and processed at 16-bit precision. That is correct but slower, and the result is always
+`*image.RGBA64`.
+
+#### Not supported
+
+* **No decoders of its own.** Formats without a Go decoder cannot be used as input at all: HEIC/HEIF,
+  AVIF, JPEG XL, camera RAW and similar. Convert to PNG or JPEG first, or use a cgo binding.
+* **Vector formats.** SVG is not a raster format; rasterise it first.
+* **Animated or multi-page files.** One frame per call. For an animated GIF, decode with
+  `gif.DecodeAll`, resize each `gif.GIF.Image[i]` yourself, and reassemble the animation. For
+  multi-page TIFF, `x/image/tiff` decodes the first page only.
+* **Metadata.** EXIF orientation is not applied, and EXIF/ICC/DPI are not carried over — see below.
+
+#### Encoding
+
+The same applies on the way out. `image/jpeg`, `image/png`, `image/gif`,
+`golang.org/x/image/tiff` and `golang.org/x/image/bmp` all provide encoders; WebP is decode-only.
+`image/jpeg` cannot store alpha, so composite the result onto a background first if the source has
+transparency.
+
+A complete program is in [`examples/resize`](examples/resize).
 
 ### Metadata
 
@@ -182,8 +228,8 @@ chroma-subsampling artifacts. Peak memory stays close to the decoded image plus 
 ### Memory and concurrency
 
 Each call allocates a transposed intermediate image and the result, so peak memory is roughly
-`source + 2 × destination`. Calls are independent and safe to run
-concurrently; each call fans out to `GOMAXPROCS` goroutines. When resizing many images in
+`source + 2 × destination`. Calls are independent and safe to run concurrently; each call fans out
+to `GOMAXPROCS` goroutines. When resizing many images in
 parallel, consider limiting your own worker count so the two levels of parallelism do not
 oversubscribe the CPU.
 
@@ -198,6 +244,15 @@ If you do not need this exact API, prefer a maintained library:
   API built on `x/image/draw`, includes filters and EXIF-aware helpers.
 * `libvips` bindings (cgo) for high-throughput server workloads.
 
+## Documentation
+
+* [`docs/benchmarks.md`](docs/benchmarks.md) — measured baseline, how to reproduce it, and the
+  before/after numbers of the YCbCr memory work.
+* [`docs/revival-analysis.md`](docs/revival-analysis.md) — audit of the archived upstream
+  repository, including the triage of its 45 issues and 26 pull requests.
+
 ## License
 
-ISC — see [LICENSE](LICENSE). Original copyright (c) 2012 Jan Schlicht.
+ISC — see [LICENSE](LICENSE).
+
+Copyright (c) 2012 Jan Schlicht, (c) 2014 Charlie Vieth, (c) 2026 Stefan Schank (this fork).
