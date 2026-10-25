@@ -7,6 +7,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `docs/revival-analysis.md` now records what happened to each of the five open upstream pull
+  requests: nothing upstream (the repository is archived and read-only), with the decision and the
+  corresponding commit in this fork documented instead.
+- Cross-compile coverage for `linux/ppc64le`, `linux/s390x`, `linux/riscv64` and `linux/loong64`
+  in a dedicated job. `linux/ppc64le` is what upstream PR #66 was after; the Travis part of that PR
+  is obsolete.
+
 ## [1.0.3] - 2026-10-25
 
 ### Changed

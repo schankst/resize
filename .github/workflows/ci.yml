@@ -89,3 +89,25 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
+
+  # Architectures that only exist on Linux. Keeping them in their own job avoids a matrix full of
+  # excludes. linux/ppc64le is what upstream PR #66 asked for; the others are pure-Go targets that
+  # cost nothing to verify.
+  cross-compile-linux-extra:
+    name: cross-compile (linux, ${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: [ppc64le, s390x, riscv64, loong64]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache-dependency-path: go.mod
+      - run: go build ./...
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"

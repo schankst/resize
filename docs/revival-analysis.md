@@ -83,6 +83,37 @@ Der Maintainer hat sich in Issue #63 (2018-02-21) explizit verabschiedet und auf
 | **#48** | „ISC License"-Titelzeile in LICENSE | **Übernehmen**, kosmetisch, aber korrekt und von choosealicense empfohlen. |
 | **#43** | Benchmarks in README | **Nicht übernehmen** (Werte von 2016, nicht reproduzierbar). Stattdessen eigene Benchmarks. |
 
+### Was mit den fünf offenen PRs passiert ist
+
+Vorweg: **upstream ist nichts passiert.** Das Repository ist archiviert und damit schreibgeschützt —
+die PRs lassen sich nicht mergen, und Review-Kommentare dort erreichen den Autor nicht mehr. Alle
+fünf stehen bis heute unverändert auf `open` (geprüft über die GitHub-API). Die Entscheidung fällt
+deshalb hier, und die Übernahme passiert als eigener Commit in diesem Fork.
+
+| PR | Upstream-Status | Übernahme hier |
+|---|---|---|
+| #70 Add go.mod | offen, ungemergt | Umgesetzt in `v1.0.0` (`f6bfb7c`); seit `v1.0.3` zusätzlich mit eigenem Modulpfad, also über den PR hinaus |
+| #67 `Bounds().Max` | offen, ungemergt | **Abgelehnt** — Patch ist sachlich falsch (siehe Tabelle oben), Begründung gehört in dieses Dokument, nicht in den PR |
+| #66 ppc64le-CI | offen, ungemergt | Travis-Teil überholt (`.travis.yml` entfernt), die Absicht übernommen: `linux/ppc64le` ist in der Cross-Compile-Matrix |
+| #48 ISC-Titelzeile | offen, ungemergt | **Übernommen** in `v1.0.0` (`45697f6`) |
+| #43 Benchmarks | offen, ungemergt | Zahlen nicht übernommen; ersetzt durch Issue #3 (eigene, reproduzierbare Benchmarks) |
+
+### Warum #48 („Add license title")?
+
+Der PR fügt der `LICENSE` eine erste Zeile `ISC License` hinzu, sonst nichts. Hintergrund: Die
+offizielle ISC-Vorlage (choosealicense.com, opensource.org, SPDX) beginnt mit dieser Titelzeile,
+die Datei im Upstream enthielt aber nur Copyright-Zeile und Erlaubnistext.
+
+Nutzen und Grenzen:
+
+- **Es ändert keine Lizenzbedingungen.** Reiner Text, identische Rechte und Pflichten.
+- **Die Datei wird selbsterklärend**, wenn sie einzeln weitergegeben wird (z. B. in einem Vendor-Ordner oder als Anhang).
+- **SPDX-/Template-Abgleich** wird eindeutig, weil die Datei dann dem kanonischen Template entspricht.
+- **GitHub hat die Lizenz vorher schon erkannt**: `licenseInfo.key` war bereits `isc`, weil der Erlaubnistext abgeglichen wird. Der PR ist also kosmetisch — aber risikofrei und in wenigen Sekunden verifiziert (`gh repo view --json licenseInfo`).
+
+Kurz: kein funktionaler Effekt, aber die Datei entspricht danach dem Standardtext. Deshalb übernommen,
+nicht abgelehnt.
+
 ### Gemergte PRs, die die Codebasis prägen
 
 #16 (Refactor, 1.3× Speedup, YCbCr+Nearest), #18 (YCbCr SubImage/PixOffset), #28 (Bounds-Checks + GOMAXPROCS-Limit), #29 (Dst-Pixel-Koordinate), #34 (RGBA-Farbe), #14 (Min != 0), #55 (Zero-Size-Schutz), #7 (Thumbnail), #64 (README).
