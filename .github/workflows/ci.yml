@@ -74,22 +74,15 @@ jobs:
             goarch: 386
           - goos: darwin
             goarch: arm
-          - goos: windows
-            goarch: arm64
-          - goos: windows
-            goarch: arm
-        # 32-bit ARM Windows (windows/arm) was dropped from the Go toolchain in Go 1.26.
-        # The package still builds there, so cover it with the last toolchain that supports it
-        # instead of silently losing the target.
-        include:
+          # 32-bit ARM Windows was dropped from the Go toolchain in Go 1.26. It still builds with
+          # older toolchains, but it is no longer a target we cover; arm64 is.
           - goos: windows
             goarch: arm
-            go: "1.25"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go || 'stable' }}
+          go-version: stable
           cache-dependency-path: go.mod
       - run: go build ./...
         env:
