@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The four `gosec` G115 findings in `clampUint8`/`clampUint16` now carry `#nosec` annotations with a
+  justification. They are explicitly temporary: issue #8 plans to remove them together with the
+  remaining conversions so that `gosec` can run as a CI gate without suppressions. Measured cost of
+  the alternative (branch-based clamps): +1.1 % geomean, +8.2 % in the worst benchmark, identical
+  pixels.
 - CI gained a `gofmt` job and pins `staticcheck` to 2026.2.2 instead of `@latest`, so a new
   analyzer release can no longer turn CI red without a code change.
 - YCbCr inputs are no longer expanded into a full-size interleaved `ycc` buffer (3 bytes per pixel

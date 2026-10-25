@@ -178,10 +178,16 @@ and is the remaining target.
 ### 5.2 gosec: 30× G115, no real security problem
 
 Every finding is a `uint16 -> uint8` or `int32 -> uint8` conversion in `clampUint8`/`clampUint16`
-and in `nearest.go`. That is **deliberate saturation** (the comment in `converter.go:25-27` explains
-the trick). Not exploitable: the package has **no I/O, no network, no crypto, no file access**
-(imports: `image`, `image/color`, `math`, `runtime`, `sync`). The real risk is **DoS through memory
-and CPU**, not injection.
+and in `nearest.go`. That is **deliberate saturation** (the comment in `converter.go` explains the
+trick). Not exploitable: the package has **no I/O, no network, no crypto, no file access** (imports:
+`image`, `image/color`, `math`, `runtime`, `sync`). The real risk is **DoS through memory and CPU**,
+not injection.
+
+The four findings in the two clamp helpers currently carry `#nosec G115` annotations with a
+justification. That is an interim state: issue #8 tracks removing them (and the remaining
+`>> 8` conversions) so that `gosec` can become a CI gate without any suppression. Measured cost of
+the branch-based clamp variant: geomean +1.1 % over twelve benchmarks, worst case +8.2 % for
+`YCbCr420` downscaling, output byte-identical.
 
 ### 5.3 Further findings
 

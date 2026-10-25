@@ -12,11 +12,13 @@ import "image"
 // [ARCH-3.4] Saturating conversion used by the filtering loops.
 // Keep value in [0,255] range.
 func clampUint8(in int32) uint8 {
-	// casting a negative int to an uint will result in an overflown
-	// large uint. this behavior will be exploited here and in other functions
-	// to achieve a higher performance.
-	if uint32(in) < 256 {
-		return uint8(in)
+	// Casting a negative int to an unsigned type yields a huge value, which is what makes the
+	// range check below work: this is a saturating clamp, not an overflow bug.
+	//
+	// The #nosec annotations are temporary; issue #8 tracks replacing them with code that gosec
+	// accepts on its own merits. See docs/revival-analysis.md 5.2.
+	if uint32(in) < 256 { // #nosec G115 -- saturating clamp; the wrap is the mechanism
+		return uint8(in) // #nosec G115 -- guarded by the range check above
 	}
 	if in > 255 {
 		return 255
@@ -27,8 +29,8 @@ func clampUint8(in int32) uint8 {
 // [ARCH-3.4] Saturating conversion used by the filtering loops.
 // Keep value in [0,65535] range.
 func clampUint16(in int64) uint16 {
-	if uint64(in) < 65536 {
-		return uint16(in)
+	if uint64(in) < 65536 { // #nosec G115 -- saturating clamp; the wrap is the mechanism
+		return uint16(in) // #nosec G115 -- guarded by the range check above
 	}
 	if in > 65535 {
 		return 65535
