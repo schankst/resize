@@ -12,14 +12,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `ResizeE` and `ThumbnailE`: same behaviour as `Resize` and `Thumbnail`, but they return an error
   instead of panicking. `Resize`/`Thumbnail` are thin wrappers that panic with that error, so
   existing call sites behave as before while new code can handle the cases. Includes the
-  `ErrNilImage` and `ErrInvalidDimensions` sentinels and the `MaxDimension` limit.
+  `ErrNilImage` and `ErrInvalidDimensions` sentinels and the `MaxDimension` limit, and
+  `ThumbnailE` computes aspect ratios in `uint64` so huge `maxWidth`/`maxHeight` cannot wrap.
 - `examples/resize`: a complete program that decodes, resizes and re-encodes an image, including
   flattening transparency for JPEG output. Built by CI as part of `go build ./...`.
 - `cmd/resize-measure`: reports peak RSS (`VmHWM`) and time for a resize scenario, so memory changes
   can be compared between checkouts. Documented in `docs/benchmarks.md`; not part of CI.
 - `bench_test.go` and `docs/benchmarks.md`: a reproducible baseline across four image types, three
   kernels and both directions, plus how to compare runs with `benchstat`. Replaces the
-  unreproducible 2016 numbers from upstream PR #43.
+  unreproducible 2016 numbers from upstream PR #43. The measured baseline is refreshed after the
+  YCbCr change, and a memory section records the before/after peak RSS.
 - Table-driven test matrix covering every input type (`RGBA`, `NRGBA`, `RGBA64`, `NRGBA64`, `Gray`,
   `Gray16`, all six `YCbCr` subsampling ratios, `Paletted`, `CMYK` and a generic `image.Image`) with
   every kernel and four directions. Statement coverage went from 63 % to 98 %.
@@ -39,13 +41,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Charlie Vieth (`ycc.go`, `nearest.go`) and Stefan Schank (this fork).
 - `README.md` rewritten for the fork: unversioned `go get`, which releases declare which module
   path, supported and unsupported formats, fast paths versus the generic fallback, decoder import
-  gotchas, metadata and alpha semantics, error handling, memory characteristics and alternatives.
-- `docs/revival-analysis.md` is now in English and records what happened to each open upstream pull
-  request.
+  gotchas, metadata and alpha semantics, error handling, memory characteristics, alternatives, and
+  the release history (the moved `v1.0.0` tag, the withdrawn `v1.0.1`).
+- `docs/revival-analysis.md` is now in English, records what happened to each open upstream pull
+  request, and documents the decision to keep gamma-correct resampling out of scope (it would change
+  pixels for every existing caller and belongs in a new API).
 - CI builds only the targets this fork supports: `linux/amd64`, `linux/arm64`, `darwin/arm64`,
   `windows/amd64`, `windows/arm64`, plus 32-bit ARM Linux with `GOARM=6` (Raspberry Pi 1, Zero) and
-  `GOARM=7` (Pi 2 v1.2+, Pi 3/4/5 with a 32-bit OS). Benchmark helpers moved out of
-  `resize_test.go` into `bench_test.go`.
+  `GOARM=7` (Pi 2 v1.2+, Pi 3/4/5 with a 32-bit OS). `darwin/amd64` is intentionally not gated —
+  Intel Macs are end-of-life — and the reason is documented in the workflow. Benchmark helpers moved
+  out of `resize_test.go` into `bench_test.go`.
 
 ### Fixed
 
