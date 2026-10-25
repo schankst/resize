@@ -26,7 +26,10 @@ THIS SOFTWARE.
 package resize
 
 import (
+	"errors"
+	"fmt"
 	"image"
+	"math"
 	"runtime"
 	"sync"
 )
@@ -74,19 +77,70 @@ func (i InterpolationFunction) kernel() (int, func(float64) float64) {
 // values <1 will sharpen the image
 var blur = 1.0
 
+// Sentinel errors returned by ResizeE and ThumbnailE. They are wrapped together with the offending
+// values, so use errors.Is to test for them.
+var (
+	// ErrNilImage is returned when img is nil.
+	ErrNilImage = errors.New("resize: nil image")
+	// ErrInvalidDimensions is returned when the requested dimensions cannot be represented, exceed
+	// MaxDimension, or would overflow the platform's int during allocation.
+	ErrInvalidDimensions = errors.New("resize: invalid dimensions")
+)
+
+// MaxDimension is the largest width or height accepted by ResizeE and ThumbnailE. Image coordinates
+// are ints, so anything above math.MaxInt32 cannot be represented on 32-bit platforms. Rejecting
+// those values keeps behaviour identical across architectures; it is not a memory limit.
+const MaxDimension = math.MaxInt32
+
 // Resize scales an image to new width and height using the interpolation function interp.
 // A new image with the given dimensions will be returned.
 // If one of the parameters width or height is set to 0, its size will be calculated so that
 // the aspect ratio is that of the originating image.
 // The resizing algorithm uses channels for parallel computation.
 // If the input image has width or height of 0, it is returned unchanged.
+//
+// Resize panics if img is nil or the requested dimensions cannot be allocated; use ResizeE if you
+// need to handle those cases as errors.
 func Resize(width, height uint, img image.Image, interp InterpolationFunction) image.Image {
-	scaleX, scaleY := calcFactors(width, height, float64(img.Bounds().Dx()), float64(img.Bounds().Dy()))
+	out, err := ResizeE(width, height, img, interp)
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
+// ResizeE is like Resize but reports invalid input instead of panicking. For every input that
+// Resize can handle, the result is identical.
+func ResizeE(width, height uint, img image.Image, interp InterpolationFunction) (image.Image, error) {
+	if img == nil {
+		return nil, ErrNilImage
+	}
+
+	bounds := img.Bounds()
+	// Nothing to resize: an empty image is returned as-is, as Resize always did.
+	if bounds.Empty() {
+		return img, nil
+	}
+
+	width, height, scaleX, scaleY := resolveSize(width, height, bounds)
+	if uint64(width) == uint64(bounds.Dx()) && uint64(height) == uint64(bounds.Dy()) {
+		return img, nil
+	}
+	if err := validateSize(width, height, bounds); err != nil {
+		return nil, err
+	}
+	return resizeImage(width, height, scaleX, scaleY, img, interp), nil
+}
+
+// resolveSize fills in a zero width or height from the aspect ratio and clamps the result to at
+// least one pixel.
+func resolveSize(width, height uint, bounds image.Rectangle) (uint, uint, float64, float64) {
+	scaleX, scaleY := calcFactors(width, height, float64(bounds.Dx()), float64(bounds.Dy()))
 	if width == 0 {
-		width = uint(0.7 + float64(img.Bounds().Dx())/scaleX)
+		width = uint(0.7 + float64(bounds.Dx())/scaleX)
 	}
 	if height == 0 {
-		height = uint(0.7 + float64(img.Bounds().Dy())/scaleY)
+		height = uint(0.7 + float64(bounds.Dy())/scaleY)
 	}
 	// Aspect ratio calculations can round down to zero for extreme shapes (e.g. a 4x32 input
 	// resized to height 1). Never return an empty image in that case.
@@ -96,7 +150,43 @@ func Resize(width, height uint, img image.Image, interp InterpolationFunction) i
 	if height == 0 {
 		height = 1
 	}
+	return width, height, scaleX, scaleY
+}
 
+// validateSize rejects dimension combinations whose pixel buffers would overflow int. All internal
+// buffers use at most 8 bytes per pixel (16-bit RGBA); the transposed intermediate is sized from
+// the source's other dimension.
+func validateSize(width, height uint, bounds image.Rectangle) error {
+	if width == 0 || height == 0 {
+		return fmt.Errorf("%w: %dx%d", ErrInvalidDimensions, width, height)
+	}
+	if width > MaxDimension || height > MaxDimension {
+		return fmt.Errorf("%w: %dx%d exceeds MaxDimension (%d)",
+			ErrInvalidDimensions, width, height, uint64(MaxDimension))
+	}
+	if !fitsProduct(uint64(width), uint64(height), 8) ||
+		!fitsProduct(uint64(bounds.Dx()), uint64(width), 8) ||
+		!fitsProduct(uint64(bounds.Dy()), uint64(height), 8) {
+		return fmt.Errorf("%w: %dx%d does not fit into the addressable memory of this platform",
+			ErrInvalidDimensions, width, height)
+	}
+	return nil
+}
+
+// fitsProduct reports whether a*b*bytesPerPixel fits into an int on this platform. The
+// multiplication is done by division so that it cannot overflow uint64 itself.
+func fitsProduct(a, b, bytesPerPixel uint64) bool {
+	if a == 0 || b == 0 {
+		return true
+	}
+	maxPixels := uint64(^uint(0)>>1) / bytesPerPixel
+	if a > maxPixels {
+		return false
+	}
+	return b <= maxPixels/a
+}
+
+func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, interp InterpolationFunction) image.Image {
 	// Trivial case: return input image
 	if int(width) == img.Bounds().Dx() && int(height) == img.Bounds().Dy() {
 		return img

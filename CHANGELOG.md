@@ -27,6 +27,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `ResizeE` and `ThumbnailE`: same behaviour as `Resize` and `Thumbnail`, but they return an error
+  instead of panicking. `Resize`/`Thumbnail` are now thin wrappers that panic with that error, so
+  existing call sites behave as before while new code can handle the cases.
+- `ErrNilImage` and `ErrInvalidDimensions` sentinels (use `errors.Is`), plus `MaxDimension`
+  (`math.MaxInt32`). Dimensions above it, and combinations whose buffers would overflow `int`
+  (32-bit included), are rejected before anything is allocated.
+- `ThumbnailE` computes the aspect ratio with `uint64` arithmetic, so a huge but legitimate
+  `maxWidth`/`maxHeight` can no longer wrap around; unconstrained maxima return the input directly.
+
+### Added
+
 - Table-driven test matrix covering every input type (`RGBA`, `NRGBA`, `RGBA64`, `NRGBA64`, `Gray`,
   `Gray16`, all six `YCbCr` subsampling ratios, `Paletted`, `CMYK` and a generic `image.Image`) with
   every kernel and four resize directions, pinning the concrete result types, aspect-ratio

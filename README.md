@@ -99,6 +99,27 @@ func main() {
 }
 ```
 
+### Error handling
+
+`Resize` and `Thumbnail` panic on invalid input — a `nil` image, or dimensions that cannot be
+represented or allocated. Use the `E` variants if you want an error instead:
+
+```go
+out, err := resize.ResizeE(800, 0, src, resize.Lanczos3)
+switch {
+case errors.Is(err, resize.ErrNilImage):
+	// src was nil
+case errors.Is(err, resize.ErrInvalidDimensions):
+	// dimensions overflow this platform or exceed resize.MaxDimension
+case err != nil:
+	return err
+}
+```
+
+For every input the panicking functions accept, the `E` variants return exactly the same image.
+`MaxDimension` (`math.MaxInt32`) is a representability limit for cross-architecture consistency, not
+a memory limit: an image that fits the limit can still be far too large for the machine.
+
 ### Interpolation functions
 
 From fastest to slowest:
