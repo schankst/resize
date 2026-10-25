@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `README.md` shows the unversioned `go get github.com/schankst/resize` and explains which releases
+  declare which module path: `v1.0.0` was moved after publication, `v1.0.1` was withdrawn (the
+  module proxy still serves its cached copy), and `v1.0.2` is the last release with the original
+  module path.
+- `docs/revival-analysis.md` is now in English.
+
 ### Added
 
 - `docs/revival-analysis.md` now records what happened to each of the five open upstream pull

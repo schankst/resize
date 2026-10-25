@@ -25,27 +25,28 @@ which was archived by its author in 2022. The API is unchanged; the import path 
 go get github.com/schankst/resize
 ```
 
-Pin a release if you need reproducible builds:
-
-```bash
-go get github.com/schankst/resize@v1.0.3
-```
-
 Requires Go 1.18 or newer.
+
+### A note on releases
+
+Only `v1.0.3` and newer declare the module path `github.com/schankst/resize`. Earlier releases
+declared `github.com/nfnt/resize`, so `go get` of this path fails for them; `v1.0.2` is kept as the
+last release that still works with a `replace` directive. The `v1.0.0` tag was moved after
+publication and `v1.0.1` was withdrawn — the Go module proxy keeps serving its cached copies under
+the original contents.
 
 ## Migrating from `nfnt/resize`
 
 The API is identical, so only the import path changes:
 
 ```bash
-go get github.com/schankst/resize@v1.0.3
+go get github.com/schankst/resize
 grep -rl 'github.com/nfnt/resize' --include='*.go' . | xargs sed -i 's|github.com/nfnt/resize|github.com/schankst/resize|g'
 go mod tidy
 ```
 
 That is `github.com/nfnt/resize` → `github.com/schankst/resize` in imports and call sites; nothing
-else. If you cannot change imports right now, `v1.0.2` is the last release that still declares the
-original module path and can be used with a `replace` directive.
+else.
 
 ## Usage
 

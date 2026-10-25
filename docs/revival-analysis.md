@@ -1,237 +1,276 @@
-# nfnt/resize — Revival-Check & Repo-Analyse
+# nfnt/resize — revival check and repository analysis
 
-**Datum:** 2026-10-25
-**Analysiertes Repo:** https://github.com/nfnt/resize (Stand `master`, Commit `83c6a99`, 2018-02-21)
-**Dieser Fork:** https://github.com/schankst/resize
-**Angewandter Skill:** `engineering/revival-check-golang` — passt, weil das Projekt archiviert/unmaintained ist und die Frage „lohnt Revival des Forks?" beantwortet werden muss. Prinzip des Skills: **verifizieren durch Ausführen, nicht behaupten.**
+**Date:** 2026-10-25
+**Analysed repository:** https://github.com/nfnt/resize (`master`, commit `83c6a99`, 2018-02-21)
+**This fork:** https://github.com/schankst/resize
+**Skill applied:** `engineering/revival-check-golang` — a fit, because the project is archived and
+unmaintained and the question is whether reviving it is worth the effort. The skill's principle:
+**verify by executing, never assert on paper.**
 
 ---
 
-## 1. Status quo (Fakten)
+## 1. Status quo (facts)
 
-| Merkmal | Wert |
+| Property | Value |
 |---|---|
-| Archiviert | **ja** (`isArchived: true`, seit ca. April 2022) |
-| Letzter Commit `master` | 2018-02-21 (`83c6a99`, Merge PR #64) |
-| Letzter Push | 2022-04-02 (nur Branch/Archiv-Aktion, kein Code) |
-| Commits gesamt | 147 |
-| Stars / Forks | 3.039 / 322 |
-| Tags / Releases | **keine** (Issue #53 seit 2016 offen) |
-| go.mod | **fehlt** (PR #70 offen, nie gemerged) |
-| Lizenz | ISC (LICENSE ohne Titelzeile, PR #48 offen) |
-| Issues / PRs | 45 Issues (7 offen), 26 PRs (5 offen, 13 gemerged) |
-| Größe | 2.671 Zeilen Go in 6 Dateien + 5 Testdateien (1.961 Nicht-Test-Zeilen) |
-| Abhängigkeiten | **keine** — nur `image`, `image/color`, `math`, `runtime`, `sync` |
-| Öffentliche API | `Resize()`, `Thumbnail()`, `InterpolationFunction` + 6 Konstanten |
+| Archived | **yes** (`isArchived: true`, since about April 2022) |
+| Last commit on `master` | 2018-02-21 (`83c6a99`, merge of PR #64) |
+| Last push | 2022-04-02 (branch/archive housekeeping only, no code) |
+| Total commits | 147 |
+| Stars / forks | 3,039 / 322 |
+| Tags / releases | **none** (issue #53 open since 2016) |
+| go.mod | **missing** (PR #70 open, never merged) |
+| License | ISC (`LICENSE` without the title line, PR #48 open) |
+| Issues / PRs | 45 issues (7 open), 26 PRs (5 open, 13 merged) |
+| Size | 2,671 lines of Go in 6 files + 5 test files (1,961 non-test lines) |
+| Dependencies | **none** — only `image`, `image/color`, `math`, `runtime`, `sync` |
+| Public API | `Resize()`, `Thumbnail()`, `InterpolationFunction` + 6 constants |
 
-Der Maintainer hat sich in Issue #63 (2018-02-21) explizit verabschiedet und auf `golang.org/x/image/draw` bzw. ImageMagick-Bindings verwiesen. Seitdem keine funktionalen Änderungen. Das Archivieren 2022 hat alle offenen PRs faktisch eingefroren („mergeable_state: blocked").
+The maintainer explicitly signed off in issue #63 (2018-02-21) and pointed at
+`golang.org/x/image/draw` and ImageMagick bindings. No functional changes since then. Archiving in
+2022 effectively froze every open PR (`mergeable_state: blocked`).
 
 ---
 
-## 2. Ausgeführte Checks (Revival-Skill, Phase A–F)
+## 2. Checks executed (revival skill, phases A–F)
 
-| # | Check | Kommando | Ergebnis |
+| # | Check | Command | Result |
 |---|---|---|---|
-| 1 | Inventar | `find . -name '*.go' \| xargs wc -l` | 2.671 LOC, 5 Testdateien, 0 Vendor |
-| 2 | Modul-Setup | `go mod init github.com/nfnt/resize` | **nötig**, Pre-Modules-Ära; `go mod tidy` zieht nichts nach |
-| 3 | Build | `go build ./...` (Go 1.26.10) | **OK**, keine Warnungen |
-| 4 | Vet | `go vet ./...` | **OK**, 0 Findings |
-| 5 | Staticcheck | `staticcheck ./...` (2026er Build) | **0 Findings** — für 8 Jahre alten Code bemerkenswert |
-| 6 | Vulns | `govulncheck ./...` | **No vulnerabilities found** (keine Deps, Stdlib-Pfade sauber) |
-| 7 | Security | `gosec -fmt=json ./...` | **30 Issues, alle G115** (Integer-Conversions) — ausschließlich `converter.go` (17) und `nearest.go` (13); siehe 5.2 |
-| 8 | Cross-Compile | `GOOS=windows\|darwin\|linux CGO_ENABLED=0 go build` | **3/3 OK** (reines Go, kein cgo) |
-| 9 | Dep-Health | entfällt | **0 externe Abhängigkeiten** — beste mögliche Antwort |
-| 10 | Runtime-Smoke | Probe-Programm (siehe `probe/`) | **funktioniert**; Verhalten unten dokumentiert |
-| — | Tests | `go test ./...` / `-cover` | **OK, 63,0 % Coverage**; `ycc.go` fast 100 %, `converter.go`-Pfade teils ungetestet |
+| 1 | Inventory | `find . -name '*.go' \| xargs wc -l` | 2,671 LOC, 5 test files, 0 vendored |
+| 2 | Module setup | `go mod init github.com/nfnt/resize` | **required**, pre-modules era; `go mod tidy` pulls nothing in |
+| 3 | Build | `go build ./...` (Go 1.26.10) | **OK**, no warnings |
+| 4 | Vet | `go vet ./...` | **OK**, 0 findings |
+| 5 | Staticcheck | `staticcheck ./...` (2026 build) | **0 findings** — remarkable for 8-year-old code |
+| 6 | Vulnerability scan | `govulncheck ./...` | **No vulnerabilities found** (no deps, clean stdlib paths) |
+| 7 | Security | `gosec -fmt=json ./...` | **30 findings, all G115** (integer conversions) — only `converter.go` (17) and `nearest.go` (13); see 5.2 |
+| 8 | Cross-compile | `GOOS=windows\|darwin\|linux CGO_ENABLED=0 go build` | **3/3 OK** (pure Go, no cgo) |
+| 9 | Dependency health | not applicable | **0 external dependencies** — the best possible answer |
+| 10 | Runtime smoke test | throwaway probe program | **works**; behaviour documented below |
+| — | Tests | `go test ./...` / `-cover` | **OK, 63.0 % coverage**; `ycc.go` near 100 %, several `converter.go` paths untested |
 
-**Fazit der Checks:** Das Ding ist kein Sanierungsfall, sondern ein *stabiles, abhängigkeitsfreies, portables* Paket — es ist nur eingefroren und hat keinen Modul-Support.
-
----
-
-## 3. Issue-Triage (45 Issues, 7 offen)
-
-### Offen
-
-| # | Titel | Bewertung |
-|---|---|---|
-| #71 | „can you supper tiff" | **Kein Library-Bug.** TIFF dekodiert man selbst (`golang.org/x/image/tiff`), `Resize` arbeitet auf `image.Image`. Dokumentationslücke. |
-| #69 | Hoher Speicherverbrauch bei vielen hochauflösenden Bildern | **Echt, by design** (siehe 5.1). Größter inhaltlicher Schwachpunkt. |
-| #68 | PNG-Format nicht erkannt | **Kein Bug.** Antwort im Thread ist korrekt: fehlender Blank-Import `_ "image/png"`. Reine Doku-Falle. |
-| #65 | „Error output is generated" | Unbrauchbar (nur Screenshot, keine Repro). Zu schließen. |
-| #63 | Maintainer-Abschied | **Erledigt** — durch Fork/Archiv obsolet. |
-| #56 | Bild auf Mobile-Browser unsichtbar | Vermutlich EXIF-Orientierung/Decoder-Thema, nicht Resampling. Nicht reproduzierbar ohne Asset. |
-| #53 | „Please version this repository" | **Berechtigt und leicht zu lösen** — Tags + go.mod. Debian-Maintainer-Anfrage. |
-
-### Geschlossen, aber strategisch relevant
-
-- **#41 „Don't reverse alpha premultiplication, it's fundamentally wrong"** (2016, 6 Kommentare) — Alpha-/Prämultiplikations-Semantik ist der historisch umstrittenste Punkt. Heute durch `Test_ResizeWithPremultipliedAlpha` und `Test_ResizeWithTranslucentColor` abgedeckt, aber die Semantik (Rückgabe von prämultipliziertem RGBA statt NRGBA) bleibt eine API-Falle.
-- **#19 / #26 / #31 / #49 / #52 / #58** — Artefakte und Panics: fast alle auf Bounds-/YCbCr-Subsampling-Fehler zurückzuführen, die zwischen 2014 und 2017 gefixt wurden. Diese Fixes sind der Grund, warum der Fork überhaupt sinnvoll ist.
-- **#44 / #13 / #10** — Metadaten (EXIF, DPI) gehen verloren. **Kein Bug**, sondern Natur eines Pixel-Resamplers; wer Metadaten braucht, muss sie separat durchreichen.
-- **#32 / #12 / #24 / #33 / #8** — Crop-/Subset-Wünsche, alle abgelehnt. Bewusste Scope-Entscheidung (Single Responsibility).
+**Conclusion of the checks:** this is not a restoration case but a *stable, dependency-free,
+portable* package — it is merely frozen and has no module support.
 
 ---
 
-## 4. PR-Triage (26 PRs, 5 offen)
+## 3. Issue triage (45 issues, 7 open)
 
-### Offene PRs — einzeln bewertet
+### Open
 
-| PR | Inhalt | Verdict |
+| # | Title | Assessment |
 |---|---|---|
-| **#70** | `go.mod` (3 Zeilen, `go 1.18`) | **Übernehmen.** Ist bei einem Revival Pflicht; trivial, risikofrei. |
-| **#67** | „Fix issue when checking the image size": `Bounds().Dx()` → `Bounds().Max.X` | **Ablehnen — der Patch ist falsch.** `Max.X` ist bei Bildern mit `Min != (0,0)` nicht die Breite. Der bestehende Code ist korrekt (empirisch bestätigt: SubImage mit Min(50,60) liefert identisches Ergebnis wie der zugeschnittene Kopie-Vergleich). |
-| **#66** | ppc64le-CI in `.travis.yml` | **Ablehnen.** Travis ist tot; Cross-Compile-Check via GitHub Actions ist der richtige Weg. Der eigentliche Code ist architekturunabhängig und braucht nichts. |
-| **#48** | „ISC License"-Titelzeile in LICENSE | **Übernehmen**, kosmetisch, aber korrekt und von choosealicense empfohlen. |
-| **#43** | Benchmarks in README | **Nicht übernehmen** (Werte von 2016, nicht reproduzierbar). Stattdessen eigene Benchmarks. |
+| #71 | "can you supper tiff" | **Not a library bug.** You decode TIFF yourself (`golang.org/x/image/tiff`); `Resize` operates on `image.Image`. Documentation gap. |
+| #69 | High memory usage when processing many high-resolution images | **Real, by design** (see 5.1). The most substantial open weakness. |
+| #68 | PNG format not recognized | **Not a bug.** The answer in the thread is correct: missing blank import `_ "image/png"`. A pure documentation trap. |
+| #65 | "Error output is generated" | Unusable (screenshot only, no repro). Would be closed. |
+| #63 | Maintainer's farewell | **Settled** — obsolete through the fork and the archive. |
+| #56 | Image not shown in mobile browser after resizing | Probably EXIF orientation or a decoder issue, not resampling. Not reproducible without the asset. |
+| #53 | "Please version this repository" | **Valid and easy to fix** — tags plus go.mod. A Debian maintainer's request. |
 
-### Was mit den fünf offenen PRs passiert ist
+### Closed but strategically relevant
 
-Vorweg: **upstream ist nichts passiert.** Das Repository ist archiviert — dort wird nichts mehr
-gemerged, und der Autor hat in Issue #63 erklärt, PRs und Issues nicht mehr anzusehen. Alle fünf
-stehen bis heute unverändert auf `open` (geprüft über die GitHub-API). Die Entscheidung fällt
-deshalb hier, und die Übernahme passiert als eigener Commit in diesem Fork.
-
-| PR | Upstream-Status | Übernahme hier |
-|---|---|---|
-| #70 Add go.mod | offen, ungemergt | Umgesetzt in `v1.0.0` (`f6bfb7c`); seit `v1.0.3` zusätzlich mit eigenem Modulpfad, also über den PR hinaus |
-| #67 `Bounds().Max` | offen, ungemergt | **Abgelehnt** — Patch ist sachlich falsch (siehe Tabelle oben), Begründung gehört in dieses Dokument, nicht in den PR |
-| #66 ppc64le-CI | offen, ungemergt | Travis-Teil überholt (`.travis.yml` entfernt). `linux/ppc64le` wird **nicht** übernommen — keine Zielplattform dieses Forks. Der Code ist architekturunabhängig; wer ppc64le braucht, baut problemlos selbst (verifiziert). |
-| #48 ISC-Titelzeile | offen, ungemergt | **Übernommen** in `v1.0.0` (`45697f6`) |
-| #43 Benchmarks | offen, ungemergt | Zahlen nicht übernommen; ersetzt durch Issue #3 (eigene, reproduzierbare Benchmarks) |
-
-### Warum #48 („Add license title")?
-
-Der PR fügt der `LICENSE` eine erste Zeile `ISC License` hinzu, sonst nichts. Hintergrund: Die
-offizielle ISC-Vorlage (choosealicense.com, opensource.org, SPDX) beginnt mit dieser Titelzeile,
-die Datei im Upstream enthielt aber nur Copyright-Zeile und Erlaubnistext.
-
-Nutzen und Grenzen:
-
-- **Es ändert keine Lizenzbedingungen.** Reiner Text, identische Rechte und Pflichten.
-- **Die Datei wird selbsterklärend**, wenn sie einzeln weitergegeben wird (z. B. in einem Vendor-Ordner oder als Anhang).
-- **SPDX-/Template-Abgleich** wird eindeutig, weil die Datei dann dem kanonischen Template entspricht.
-- **GitHub hat die Lizenz vorher schon erkannt**: `licenseInfo.key` war bereits `isc`, weil der Erlaubnistext abgeglichen wird. Der PR ist also kosmetisch — aber risikofrei und in wenigen Sekunden verifiziert (`gh repo view --json licenseInfo`).
-
-Kurz: kein funktionaler Effekt, aber die Datei entspricht danach dem Standardtext. Deshalb übernommen,
-nicht abgelehnt.
-
-### Gemergte PRs, die die Codebasis prägen
-
-#16 (Refactor, 1.3× Speedup, YCbCr+Nearest), #18 (YCbCr SubImage/PixOffset), #28 (Bounds-Checks + GOMAXPROCS-Limit), #29 (Dst-Pixel-Koordinate), #34 (RGBA-Farbe), #14 (Min != 0), #55 (Zero-Size-Schutz), #7 (Thumbnail), #64 (README).
-
-### Nie gemergte, aber inhaltlich relevante geschlossene PRs
-
-- **#51 / #57 / #39 / #38 / #60** — YCbCr-Subsampling 4:1:1 und 4:1:0. Der Code enthält diese Pfade heute (`ycc.go` mit eigenen Konstanten-Kopien, Zeilen 91–100). `#60` („Use sub sample ratio from the input image") wurde **nicht** übernommen — der Ausgabepfad forciert 4:4:4, was korrekt, aber speicherintensiv ist.
-- **#42 / #41** — Alpha-Prämultiplikation: #34 wurde gemerged, #42 nicht. Die Semantik blieb dadurch inkonsistent zwischen RGBA- und NRGBA-Pfad.
-- **#2** (Gamma/sRGB), **#4** (LUT für Lanczos), **#8** (Crop) — nicht übernommen; #2 ist der Grund, warum Farben bei extremen Skalierungen leicht daneben liegen können (kein Gamma-korrektes Resampling).
+- **#41 "Don't reverse alpha premultiplication, it's fundamentally wrong"** (2016, 6 comments) —
+  alpha/premultiplication semantics is the most contested topic historically. Covered today by
+  `Test_ResizeWithPremultipliedAlpha` and `Test_ResizeWithTranslucentColor`, but the semantics
+  (returning premultiplied RGBA instead of NRGBA) remain an API trap.
+- **#19 / #26 / #31 / #49 / #52 / #58** — artifacts and panics: almost all trace back to bounds and
+  YCbCr subsampling bugs fixed between 2014 and 2017. Those fixes are the very reason a fork makes
+  sense.
+- **#44 / #13 / #10** — metadata (EXIF, DPI) is lost. **Not a bug**, but the nature of a pixel
+  resampler; anyone who needs metadata has to carry it through separately.
+- **#32 / #12 / #24 / #33 / #8** — crop/subset requests, all rejected. A deliberate scope decision
+  (single responsibility).
 
 ---
 
-## 5. Code-Befunde (verifiziert, nicht behauptet)
+## 4. PR triage (26 PRs, 5 open)
 
-### 5.1 Speicherverhalten — Issue #69 ist real
+### Open PRs, assessed individually
 
-Gemessen (Probe, 2 vCPU):
-
-| Szenario | Peak-RSS | Zeit |
+| PR | Content | Verdict |
 |---|---|---|
-| 24-MP-JPEG (6000×4000 YCbCr) dekodieren + →1200×800 Lanczos3 | **~130 MB** | 282 ms |
-| 20× 4000×3000 RGBA → 800×600 Lanczos3 | ~119 MB | 2,47 s |
-| 8 parallele Goroutinen × 3 Resizes (3000×2000 → 600×400) | ~143 MB | 1,46 s |
+| **#70** | `go.mod` (3 lines, `go 1.18`) | **Adopt.** Mandatory for a revival; trivial and risk-free. |
+| **#67** | "Fix issue when checking the image size": `Bounds().Dx()` → `Bounds().Max.X` | **Reject — the patch is wrong.** `Max.X` is not the width when `Min != (0,0)`. The existing code is correct (empirically confirmed: a SubImage with Min(50,60) produces exactly the same result as the equivalent cropped copy). |
+| **#66** | ppc64le CI in `.travis.yml` | **Reject.** Travis is dead; a cross-compile check via GitHub Actions is the right approach. The code itself is architecture-independent and needs nothing. |
+| **#48** | "ISC License" title line in LICENSE | **Adopt** — cosmetic, but correct and recommended by choosealicense. |
+| **#43** | Benchmarks in the README | **Do not adopt** (2016 numbers, not reproducible). Write our own benchmarks instead. |
 
-Ursache, drei parallel wirksame Effekte:
-1. **Vollkopie bei YCbCr:** `ycc.go:127` alloziert `3*w*h` Bytes für das *ganze* Bild, zusätzlich zum dekodierten Original (`imageYCbCrToYCC`, `ycc.go:124`). Bei 24 MP sind das 72 MB Extra.
-2. **Transponierter Zwischenpuffer:** `resize.go:114` legt `Dx(input) × width` an — also ein volles Bild in Zielbreite, plus Ergebnis.
-3. **Kein Tiling/Streaming:** es gibt keinen Weg, ein Bild in Streifen zu verarbeiten; jede Anfrage braucht den vollen Puffer. Kein Pooling, keine Wiederverwendung der Koeffiziententabellen.
+### What happened to the five open PRs
 
-### 5.2 gosec: 30× G115, kein echtes Sicherheitsproblem
+Up front: **nothing happened upstream.** The repository is archived — nothing gets merged there,
+and the author stated in issue #63 that he no longer looks at PRs or issues. All five are still
+`open` to this day (verified via the GitHub API). The decision therefore lives here, and adoption
+happens as a commit in this fork.
 
-Alle Findings sind `uint16 -> uint8` / `int32 -> uint8` in `clampUint8`/`clampUint16` und `nearest.go`. Das ist **absichtliche Saturierung** (Kommentar in `converter.go:25-27` erklärt den Trick). Nicht ausnutzbar: das Paket hat **keine I/O, kein Netzwerk, kein Crypto, keine Dateizugriffe** (Importe: `image`, `image/color`, `math`, `runtime`, `sync`). Das reale Risiko ist **DoS über Speicher/CPU**, nicht Injection.
-
-### 5.3 Weitere Befunde
-
-| Befund | Ort | Schwere |
+| PR | Upstream status | Adoption here |
 |---|---|---|
-| `int(width)`/`int(height)` ohne Overflow-Prüfung: auf 32-bit kann `width > 2^31` zu negativen Dimensionen → `image.NewRGBA` panict | `resize.go:92,114-115` | mittel (nur 32-bit / absurde Eingaben) |
-| Division durch `sum` ohne Null-Check; theoretisch `sum == 0`, wenn alle Koeffizienten auf 0 runden | `converter.go:129` u. a. | niedrig (nicht reproduzierbar getestet bis 100× Downscale) |
-| `var blur = 1.0` global, **nicht exportiert** → toter Konfigurationspfad („sharpen" nicht nutzbar) | `resize.go:74` | niedrig, aber API-Missstand |
-| Goroutine-Zahl = `GOMAXPROCS(0)` pro Durchlauf, unabhängig von Bildgröße → bei vielen parallelen Aufrufen Oversubscription | `resize.go:106,351` | niedrig (Messung: 1,46 s für 24 Resizes auf 2 Kernen, akzeptabel) |
-| `image.Paletted` und `image.CMYK` fallen in den **generischen 16-bit-Pfad** (`in.At()`), d. h. massiv langsamer und ohne Palette-Erhalt | `resize.go` default-Zweig | mittel für GIF/PNG-8-Workloads |
-| Kein Kontext/Abbruch: ein 100-MP-Resize läuft bis zum Ende | gesamtes Paket | niedrig |
-| Kein Gamma-korrektes Resampling (PR #2 nie übernommen) | `filters.go` | kosmetisch |
-| `README` behauptet „needs at least Go 1.1"; `.travis.yml` testet Go 1.1/1.4/1.x (tot) | README, `.travis.yml` | Doku |
-| Keine Versionierung → `go get` liefert Pseudo-Version `v0.0.0-…`; Debian-Packaging hängt | fehlende Tags | mittel für Konsumenten |
+| #70 Add go.mod | open, unmerged | Implemented in `v1.0.0`; since `v1.0.3` additionally with its own module path, i.e. beyond what the PR did |
+| #67 `Bounds().Max` | open, unmerged | **Rejected** — the patch is factually wrong (see table above); the reasoning belongs in this document, not in the PR |
+| #66 ppc64le CI | open, unmerged | Travis part obsolete (`.travis.yml` removed). `linux/ppc64le` is **not** adopted — it is not a target platform of this fork. The code is architecture-independent; anyone who needs ppc64le can build it themselves (verified). |
+| #48 ISC title line | open, unmerged | **Adopted** in `v1.0.0` |
+| #43 Benchmarks | open, unmerged | Numbers not adopted; superseded by issue #3 (own, reproducible benchmarks) |
 
-### 5.4 Was überraschend gut ist
+### Why #48 ("Add license title")?
 
-- **`go vet`, `staticcheck`, `govulncheck` komplett sauber** — für 2018er Code ungewöhnlich.
-- **`ycc.go` hat ~100 % Testabdeckung** inkl. 4:1:1/4:1:0-Pfaden.
-- **Bounds-Behandlung funktioniert** (SubImage mit `Min != (0,0)` verifiziert korrekt, inkl. Nearest-Pfad).
-- **Null Abhängigkeiten** → keine Supply-Chain-Fläche, kein CVE-Risiko über Deps.
+The PR adds a first line `ISC License` to `LICENSE` and nothing else. Background: the official ISC
+template (choosealicense.com, opensource.org, SPDX) starts with that title line, while the upstream
+file only contained the copyright line and the permission text.
+
+Benefits and limits:
+
+- **It changes no license terms.** Pure text, identical rights and obligations.
+- **The file becomes self-explanatory** when distributed on its own (a vendor directory, an
+  attachment).
+- **SPDX/template matching becomes unambiguous**, because the file then matches the canonical
+  template.
+- **GitHub already detected the license before**: `licenseInfo.key` was `isc` all along, because the
+  permission text is what gets matched. So the PR is cosmetic — but risk-free and verifiable in
+  seconds (`gh repo view --json licenseInfo`).
+
+In short: no functional effect, but the file then matches the standard text. That is why it was
+adopted rather than rejected.
+
+### Merged PRs that shape the codebase
+
+#16 (refactor, 1.3× speedup, YCbCr + nearest), #18 (YCbCr SubImage/PixOffset), #28 (bounds checks +
+GOMAXPROCS limit), #29 (destination pixel coordinate), #34 (RGBA colour), #14 (Min != 0), #55
+(zero-size guard), #7 (Thumbnail), #64 (README).
+
+### Never merged, but substantively relevant closed PRs
+
+- **#51 / #57 / #39 / #38 / #60** — YCbCr subsampling 4:1:1 and 4:1:0. The code contains those paths
+  today (`ycc.go`, with its own copies of the ratio constants). **#60** ("Use sub sample ratio from
+  the input image") was **not** adopted — the output path forces 4:4:4, which is correct but
+  memory-hungry.
+- **#42 / #41** — alpha premultiplication: #34 was merged, #42 was not. The semantics therefore
+  remained inconsistent between the RGBA and NRGBA paths.
+- **#2** (gamma/sRGB), **#4** (lookup table for Lanczos), **#8** (crop) — not adopted; #2 is the
+  reason colours can drift slightly on extreme scaling (no gamma-correct resampling).
 
 ---
 
-## 6. Empfehlung für den Fork
+## 5. Code findings (verified, not asserted)
 
-### Kurzfassung
+### 5.1 Memory behaviour — issue #69 is real
 
-Der Fork ist **revival-fähig mit sehr geringem Aufwand** (~2–4 Dev-Tage agentengestützt). Der Code ist nicht kaputt — er ist eingefroren. Der eigentliche Wert liegt in: go.mod + Tags, Speicher-Effizienz, moderne API, CI.
+Measured (probe, 2 vCPU):
 
-### Konkrete Roadmap
-
-| Priorität | Maßnahme | Aufwand |
+| Scenario | Peak RSS | Time |
 |---|---|---|
-| P0 | `go.mod` übernehmen (#70), Tag `v1.0.0`, `LICENSE`-Titel (#48) | 1 h |
-| P0 | GitHub Actions: `go test -race`, `staticcheck`, `govulncheck`, Cross-Compile-Matrix (ersetzt `.travis.yml`, macht #66 überflüssig) | 2 h |
-| P1 | Größen-/Overflow-Validierung + dokumentierte Fehler-API (statt panic) — erfordert neue Signatur oder `ResizeE` | 0,5 d |
-| P1 | Speicher: YCbCr nur bei Bedarf nach `ycc` kopieren, Zwischenpuffer wiederverwenden (oder gar nicht transponieren), `sync.Pool` für Koeffizienten | 1–1,5 d |
-| P2 | Optionale Konfiguration: `blur`/Sharpen exportieren (funktionale Optionen statt globaler `var`) | 0,5 d |
-| P2 | `image.Paletted`/`CMYK` schnell pfaden bzw. dokumentiert konvertieren | 0,5 d |
-| P3 | Doku: PNG/TIFF/EXIF-Fallen (aus #68/#71/#44) in README; Benchmarks statt 2016er-Zahlen | 0,5 d |
+| Decode a 24 MP JPEG (6000×4000 YCbCr) + resize → 1200×800 Lanczos3 | **~130 MB** | 282 ms |
+| 20× 4000×3000 RGBA → 800×600 Lanczos3 | ~119 MB | 2.47 s |
+| 8 parallel goroutines × 3 resizes (3000×2000 → 600×400) | ~143 MB | 1.46 s |
 
-### Alternative, die man ehrlich benennen muss
+Three effects cause this, all active at once:
 
-`golang.org/x/image/draw` (Empfehlung des Originalautors) ist semantisch verwandt, aber ohne Komfort-API (`Thumbnail`, 6 benannte Interpolationen). Wer das Rad nicht neu drehen will: `github.com/disintegration/imaging` (gepflegt, wrappt `x/image/draw`) oder `github.com/h2non/bimg` (libvips, cgo). **Der Fork lohnt sich nur, wenn** (a) API-Kompatibilität zu bestehenden `nfnt/resize`-Aufrufen gewünscht ist oder (b) man die Lern-/Ownership-Übung will. Für reine Neuprojekte ist `imaging` die pragmatischere Wahl.
+1. **Full copy for YCbCr:** `ycc.go:127` allocates `3*w*h` bytes for the *entire* image, on top of
+   the decoded original (`imageYCbCrToYCC`, `ycc.go:124`). At 24 MP that is 72 MB extra.
+2. **Transposed intermediate buffer:** `resize.go:114` allocates `Dx(input) × width`, i.e. a full
+   image at the target width, plus the result.
+3. **No tiling/streaming:** there is no way to process an image in strips; every call needs the
+   full buffer. No pooling, no reuse of the coefficient tables.
 
-### Entscheidung zum Fork-Status
+### 5.2 gosec: 30× G115, no real security problem
 
-Der Fork ist seit 2026-10-25 **public** und getaggt. Ab `v1.0.3` lautet der Modulpfad
-`github.com/schankst/resize`; Installation ist damit ein einzelner Befehl
-(`go get github.com/schankst/resize`). Die API bleibt identisch, nur die Importpfade ändern sich.
+Every finding is a `uint16 -> uint8` or `int32 -> uint8` conversion in `clampUint8`/`clampUint16`
+and in `nearest.go`. That is **deliberate saturation** (the comment in `converter.go:25-27` explains
+the trick). Not exploitable: the package has **no I/O, no network, no crypto, no file access**
+(imports: `image`, `image/color`, `math`, `runtime`, `sync`). The real risk is **DoS through memory
+and CPU**, not injection.
 
-Bis `v1.0.2` behielt das Modul den Pfad `github.com/nfnt/resize`, damit ein `replace`-Block als
-Drop-in funktioniert. Das war technisch korrekt, aber unpraktisch: `go get github.com/nfnt/resize`
-holt das archivierte Original, ein direktes `go get` des Forks ist mit diesem Pfad unmöglich.
-`v1.0.2` bleibt als letzte Release mit Originalpfad verfügbar, falls jemand Imports nicht anfassen
-kann.
+### 5.3 Further findings
 
-Nebenbefund zur SemVer: `v2.0.0` wäre der falsche Weg, weil Go dann den Modulpfad
-`github.com/schankst/resize/v2` und entsprechend `/v2`-Imports erzwingt — das Gegenteil von einfach.
-
-### Umsetzungsstand (Stand 2026-10-25)
-
-| Phase | Inhalt | Status |
+| Finding | Location | Severity |
 |---|---|---|
-| P0 | `go.mod` mit eigenem Modulpfad, Tags bis `v1.0.3`, ISC-Titel, CI (test/race/staticcheck/govulncheck/cross-compile), README, Changelog, Doku | **erledigt** |
-| P1 | Panic-/Overflow-Härtung mit additiver Fehler-API, Speicherreduktion, Benchmarks | offen |
-| P2 | Konfigurierbares `blur` (funktionale Optionen), schnelle Paletted/CMYK-Pfade | offen |
-| P3 | Doku-Feinschliff, Gamma-Frage bewerten | offen |
+| `int(width)`/`int(height)` without an overflow check: on 32-bit, `width > 2^31` can yield negative dimensions → `image.NewRGBA` panics | `resize.go:92,114-115` | medium (32-bit only / absurd input) |
+| Division by `sum` without a zero check; theoretically `sum == 0` if all coefficients round to 0 | `converter.go:129` and others | low (not reproducible up to 100× downscale) |
+| `var blur = 1.0` global and **not exported** → dead configuration path ("sharpen" unusable) | `resize.go:74` | low, but an API gap |
+| Goroutine count = `GOMAXPROCS(0)` per pass, independent of image size → oversubscription with many concurrent calls | `resize.go:106,351` | low (measured: 1.46 s for 24 resizes on 2 cores, acceptable) |
+| `image.Paletted` and `image.CMYK` fall into the **generic 16-bit path** (`in.At()`), i.e. far slower and without palette preservation | `resize.go` default branch | medium for GIF/PNG-8 workloads |
+| No context/cancellation: a 100 MP resize runs to completion | whole package | low |
+| No gamma-correct resampling (PR #2 never adopted) | `filters.go` | cosmetic |
+| README claims "needs at least Go 1.1"; `.travis.yml` tests Go 1.1/1.4/1.x (dead) | README, `.travis.yml` | documentation |
+| No versioning → `go get` returns a pseudo-version `v0.0.0-…`; Debian packaging is blocked | missing tags | medium for consumers |
+
+### 5.4 What is surprisingly good
+
+- **`go vet`, `staticcheck` and `govulncheck` are completely clean** — unusual for 2018 code.
+- **`ycc.go` has ~100 % test coverage**, including the 4:1:1/4:1:0 paths.
+- **Bounds handling works** (SubImage with `Min != (0,0)` verified correct, including the nearest
+  path).
+- **Zero dependencies** → no supply-chain surface and no CVE exposure through dependencies.
 
 ---
 
-## 7. Checkliste des Skills — Status
+## 6. Recommendation for the fork
 
-- [x] In separatem Scratch-Verzeichnis geklont, Original unangetastet
-- [x] LOC + Testdateien erfasst (2.671 / 5)
-- [x] `go build ./...` pro Paket (ein Paket, OK)
+### Summary
+
+The fork is **revivable at very low cost** (~2–4 dev-days, agent-assisted). The code is not broken —
+it is frozen. The real value lies in: go.mod plus tags, memory efficiency, a modern API, and CI.
+
+### Concrete roadmap
+
+| Priority | Measure | Effort |
+|---|---|---|
+| P0 | Adopt `go.mod` (#70), tag `v1.0.0`, LICENSE title (#48) | 1 h |
+| P0 | GitHub Actions: `go test -race`, `staticcheck`, `govulncheck`, cross-compile matrix (replaces `.travis.yml`, makes #66 moot) | 2 h |
+| P1 | Size/overflow validation plus a documented error API (instead of panic) — needs a new signature or `ResizeE` | 0.5 d |
+| P1 | Memory: copy YCbCr to `ycc` only when needed, reuse the intermediate buffer (or stop transposing), `sync.Pool` for coefficients | 1–1.5 d |
+| P2 | Optional configuration: export `blur`/sharpen (functional options instead of a package-level `var`) | 0.5 d |
+| P2 | Fast paths for `image.Paletted`/`CMYK`, or documented conversion | 0.5 d |
+| P3 | Documentation: PNG/TIFF/EXIF traps (from #68/#71/#44) in the README; benchmarks instead of the 2016 numbers | 0.5 d |
+
+### The alternative we have to name honestly
+
+`golang.org/x/image/draw` (the original author's recommendation) is semantically related but has no
+convenience API (`Thumbnail`, six named interpolations). Anyone who does not want to rebuild the
+wheel can use `github.com/disintegration/imaging` (maintained, wraps `x/image/draw`) or
+`github.com/h2non/bimg` (libvips, cgo). **The fork is worth it only if** (a) API compatibility with
+existing `nfnt/resize` call sites matters, or (b) you want the learning/ownership exercise. For new
+projects, `imaging` is the more pragmatic choice.
+
+### Decision on the fork's status
+
+The fork has been **public** and tagged since 2026-10-25. From `v1.0.3` on, the module path is
+`github.com/schankst/resize`, so installation is a single command:
+`go get github.com/schankst/resize`. The API is unchanged; only import paths differ.
+
+Up to `v1.0.2` the module kept the path `github.com/nfnt/resize` so a `replace` block could act as a
+drop-in. That was technically correct but impractical: `go get github.com/nfnt/resize` fetches the
+archived original, and a direct `go get` of the fork is impossible under that path. `v1.0.2` remains
+available as the last release with the original path, in case someone cannot touch imports.
+
+A side note on SemVer: `v2.0.0` would be the wrong move, because Go would then require the module
+path `github.com/schankst/resize/v2` and corresponding `/v2` imports — the opposite of simple.
+
+### Implementation status (as of 2026-10-25)
+
+| Phase | Content | Status |
+|---|---|---|
+| P0 | `go.mod` with its own module path, tags up to `v1.0.3`, ISC title, CI (test/race/staticcheck/govulncheck/cross-compile), README, changelog, docs | **done** |
+| P1 | Panic/overflow hardening with an additive error API, memory reduction, benchmarks | open |
+| P2 | Configurable `blur` (functional options), fast Paletted/CMYK paths | open |
+| P3 | Documentation polish, evaluate the gamma question | open |
+
+---
+
+## 7. Skill checklist — status
+
+- [x] Cloned into a separate scratch directory, original untouched
+- [x] LOC and test files recorded (2,671 / 5)
+- [x] `go build ./...` per package (one package, OK)
 - [x] `go vet ./...` (0)
 - [x] `staticcheck ./...` (0)
-- [x] `govulncheck ./...` (keine; keine Deps, kein Ausschluss nötig)
-- [x] `gosec` gelaufen (30× G115, erklärt)
-- [x] AUTH/Hash/TLS manuell geprüft — **nicht anwendbar**, keine Auth/Crypto/Netzwerk im Paket
-- [x] Cross-Compile windows/darwin/linux (3/3)
-- [x] Dependency-Tabelle — leer, 0 Deps
-- [x] Runtime-Smoke-Test mit echten Bildern, Speicher-/Zeitmessung
-- [x] Refactoring-Aufwandsschätzung erstellt
-- [x] Keine Behauptung ohne ausgeführtes Kommando
+- [x] `govulncheck ./...` (none; no deps, no exclusions needed)
+- [x] `gosec` run (30× G115, explained)
+- [x] AUTH/hash/TLS checked manually — **not applicable**, no auth/crypto/network in the package
+- [x] Cross-compile windows/darwin/linux (3/3)
+- [x] Dependency table — empty, 0 deps
+- [x] Runtime smoke test with real images, memory/time measurement
+- [x] Refactoring effort estimate produced
+- [x] No claim without a command that was actually run
 
-**Reproduzierbarkeit:** Alle Befunde wurden mit Go 1.26.10 auf einer 2-vCPU-Maschine erzeugt. Die Messungen stammen aus einem separaten Wegwerf-Programm (Dekodierung + Resize + Peak-RSS-Sampling über `/proc/<pid>/status`); die Zahlen sind als Größenordnung zu lesen, nicht als Benchmark.
+**Reproducibility:** all findings were produced with Go 1.26.10 on a 2-vCPU machine. The measurements
+come from a separate throwaway program (decode + resize + peak-RSS sampling via `/proc/<pid>/status`);
+the numbers are orders of magnitude, not a benchmark.
