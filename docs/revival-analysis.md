@@ -85,9 +85,9 @@ Der Maintainer hat sich in Issue #63 (2018-02-21) explizit verabschiedet und auf
 
 ### Was mit den fünf offenen PRs passiert ist
 
-Vorweg: **upstream ist nichts passiert.** Das Repository ist archiviert und damit schreibgeschützt —
-die PRs lassen sich nicht mergen, und Review-Kommentare dort erreichen den Autor nicht mehr. Alle
-fünf stehen bis heute unverändert auf `open` (geprüft über die GitHub-API). Die Entscheidung fällt
+Vorweg: **upstream ist nichts passiert.** Das Repository ist archiviert — dort wird nichts mehr
+gemerged, und der Autor hat in Issue #63 erklärt, PRs und Issues nicht mehr anzusehen. Alle fünf
+stehen bis heute unverändert auf `open` (geprüft über die GitHub-API). Die Entscheidung fällt
 deshalb hier, und die Übernahme passiert als eigener Commit in diesem Fork.
 
 | PR | Upstream-Status | Übernahme hier |
