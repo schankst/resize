@@ -163,17 +163,19 @@ Der Fork ist **revival-fähig mit sehr geringem Aufwand** (~2–4 Dev-Tage agent
 
 ### Entscheidung zum Fork-Status
 
-Der Fork ist seit 2026-10-25 **public**, getaggt mit `v1.0.0` und über einen `replace`-Block
+Der Fork ist seit 2026-10-25 **public** und mit `v1.0.0`/`v1.0.1` getaggt. Der `replace`-Block ist
 verifiziert (Testmodul, das `github.com/nfnt/resize` importiert und gegen
-`github.com/schankst/resize v1.0.0` ersetzt — Build und Laufzeit OK über den Module Proxy).
+`github.com/schankst/resize v1.0.1` ersetzt — `go mod tidy`, `go run` und `go list -m all` OK über
+den Module Proxy). Ein direktes `go get` des Fork-Pfads ist bewusst nicht möglich.
 Ein direktes `go get github.com/schankst/resize` schlägt bewusst fehl, weil der Modulpfad
-`github.com/nfnt/resize` bleibt.
+`github.com/nfnt/resize` bleibt; auch `go get github.com/nfnt/resize` holt das Original, nicht den
+Fork.
 
 ### Umsetzungsstand (Stand 2026-10-25)
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| P0 | `go.mod`, Tag `v1.0.0`, ISC-Titel, CI (test/race/staticcheck/govulncheck/cross-compile), README, Changelog, Doku | **erledigt** |
+| P0 | `go.mod`, Tags `v1.0.0`/`v1.0.1`, ISC-Titel, CI (test/race/staticcheck/govulncheck/cross-compile), README, Changelog, Doku | **erledigt** |
 | P1 | Panic-/Overflow-Härtung mit additiver Fehler-API, Speicherreduktion, Benchmarks | offen |
 | P2 | Konfigurierbares `blur` (funktionale Optionen), schnelle Paletted/CMYK-Pfade | offen |
 | P3 | Doku-Feinschliff, Gamma-Frage bewerten | offen |

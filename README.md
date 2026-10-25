@@ -1,7 +1,6 @@
 # resize
 
 [![CI](https://github.com/schankst/resize/actions/workflows/ci.yml/badge.svg)](https://github.com/schankst/resize/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/nfnt/resize.svg)](https://pkg.go.dev/github.com/nfnt/resize)
 [![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
 Image resizing for the Go programming language with common interpolation methods.
@@ -21,11 +20,49 @@ used as a drop-in replacement.
 
 ## Installation
 
+**`go get github.com/nfnt/resize` does not install this fork.** That path resolves to the archived
+upstream repository. This fork deliberately keeps the module path `github.com/nfnt/resize` so that
+existing code compiles unchanged, which means it is consumed through a `replace` directive.
+
+In a module that already depends on `github.com/nfnt/resize`:
+
 ```bash
-go get github.com/nfnt/resize
+go mod edit -replace=github.com/nfnt/resize=github.com/schankst/resize@v1.0.2
+go mod tidy
 ```
 
-Requires Go 1.18 or newer.
+In a new module:
+
+```bash
+go mod init example.com/myapp
+go mod edit -require=github.com/nfnt/resize@v1.0.2
+go mod edit -replace=github.com/nfnt/resize=github.com/schankst/resize@v1.0.2
+go mod tidy
+```
+
+The equivalent `go.mod`:
+
+```
+require github.com/nfnt/resize v1.0.2
+
+replace github.com/nfnt/resize => github.com/schankst/resize v1.0.2
+```
+
+Imports stay `github.com/nfnt/resize`; no source change is needed. Requires Go 1.18 or newer.
+
+Check that the fork is actually in use:
+
+```bash
+go list -m all | grep nfnt
+# github.com/nfnt/resize v1.0.2 => github.com/schankst/resize v1.0.2
+```
+
+Two consequences of the `replace` approach:
+
+* `go get -u` does **not** upgrade a replaced module. Bump the version on the right-hand side
+  yourself.
+* `go get github.com/schankst/resize@v1.0.2` fails with
+  `module declares its path as: github.com/nfnt/resize`. That is expected, not a bug.
 
 ## Usage
 
@@ -143,21 +180,17 @@ concurrently; each call fans out to `GOMAXPROCS` goroutines. When resizing many 
 parallel, consider limiting your own worker count so the two levels of parallelism do not
 oversubscribe the CPU.
 
-## Drop-in replacement for `nfnt/resize`
+## Why the module path stays `github.com/nfnt/resize`
 
-The module path deliberately stays `github.com/nfnt/resize`, so existing code keeps compiling.
-Point it at this fork with a `replace` directive:
+Keeping the original module path is what makes this fork a drop-in replacement: existing imports,
+`go.mod` entries and call sites keep working, and the fork can be swapped in or out with a single
+`replace` line. The trade-offs are the awkward install shown above and the fact that
+[pkg.go.dev](https://pkg.go.dev/github.com/nfnt/resize) documents the module path, which resolves
+to the archived upstream rather than to this repository.
 
-```
-require github.com/nfnt/resize v1.0.0
-
-replace github.com/nfnt/resize => github.com/schankst/resize v1.0.0
-```
-
-The `replace` directive is required, not optional: the module declares its path as
-`github.com/nfnt/resize` on purpose, so `go get github.com/schankst/resize@v1.0.0` fails with
-`module declares its path as: github.com/nfnt/resize`. To depend on the fork without a `replace`,
-rename the module path in your own copy (and adjust every import).
+If you would rather depend on the fork directly, rename the module path in your own copy
+(`module github.com/schankst/resize`) and adjust every import — but then it is no longer a drop-in
+replacement for code that imports the original path.
 
 ## Alternatives
 
