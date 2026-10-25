@@ -1,151 +1,173 @@
-# This package is no longer being updated! Please look for alternatives if that bothers you.
+# resize
 
-Resize
-======
+[![CI](https://github.com/schankst/resize/actions/workflows/ci.yml/badge.svg)](https://github.com/schankst/resize/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nfnt/resize.svg)](https://pkg.go.dev/github.com/nfnt/resize)
+[![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
-Image resizing for the [Go programming language](http://golang.org) with common interpolation methods.
+Image resizing for the Go programming language with common interpolation methods.
 
-[![Build Status](https://travis-ci.org/nfnt/resize.svg)](https://travis-ci.org/nfnt/resize)
+This repository is a **maintained fork** of the original [`nfnt/resize`](https://github.com/nfnt/resize),
+which was archived by its author in 2022. The fork keeps the same import path and API so it can be
+used as a drop-in replacement.
 
-Installation
-------------
+## Features
+
+* Six interpolation kernels, from fast to high quality
+* Works with any `image.Image`; specialized fast paths for `RGBA`, `NRGBA`, `RGBA64`, `NRGBA64`,
+  `Gray`, `Gray16` and `YCbCr` (all subsampling ratios)
+* Parallelized across `GOMAXPROCS`
+* **Zero external dependencies** — only the Go standard library
+* Pure Go: cross-compiles to every target without cgo
+
+## Installation
 
 ```bash
-$ go get github.com/nfnt/resize
+go get github.com/nfnt/resize
 ```
 
-It's that easy!
+Requires Go 1.18 or newer.
 
-Usage
------
+## Usage
 
-This package needs at least Go 1.1. Import package with
-
-```go
-import "github.com/nfnt/resize"
-```
-
-The resize package provides 2 functions:
-
-* `resize.Resize` creates a scaled image with new dimensions (`width`, `height`) using the interpolation function `interp`.
-  If either `width` or `height` is set to 0, it will be set to an aspect ratio preserving value.
-* `resize.Thumbnail` downscales an image preserving its aspect ratio to the maximum dimensions (`maxWidth`, `maxHeight`).
-  It will return the original image if original sizes are smaller than the provided dimensions.
+The package provides two functions:
 
 ```go
 resize.Resize(width, height uint, img image.Image, interp resize.InterpolationFunction) image.Image
 resize.Thumbnail(maxWidth, maxHeight uint, img image.Image, interp resize.InterpolationFunction) image.Image
 ```
 
-The provided interpolation functions are (from fast to slow execution time)
-
-- `NearestNeighbor`: [Nearest-neighbor interpolation](http://en.wikipedia.org/wiki/Nearest-neighbor_interpolation)
-- `Bilinear`: [Bilinear interpolation](http://en.wikipedia.org/wiki/Bilinear_interpolation)
-- `Bicubic`: [Bicubic interpolation](http://en.wikipedia.org/wiki/Bicubic_interpolation)
-- `MitchellNetravali`: [Mitchell-Netravali interpolation](http://dl.acm.org/citation.cfm?id=378514)
-- `Lanczos2`: [Lanczos resampling](http://en.wikipedia.org/wiki/Lanczos_resampling) with a=2
-- `Lanczos3`: [Lanczos resampling](http://en.wikipedia.org/wiki/Lanczos_resampling) with a=3
-
-Which of these methods gives the best results depends on your use case.
-
-Sample usage:
+`Resize` scales to the given dimensions. If either `width` or `height` is `0`, the value is
+calculated from the aspect ratio of the input. `Thumbnail` downscales preserving the aspect ratio,
+never upscales, and returns the input unchanged if it already fits.
 
 ```go
 package main
 
 import (
-	"github.com/nfnt/resize"
 	"image/jpeg"
 	"log"
 	"os"
+
+	"github.com/nfnt/resize"
 )
 
 func main() {
-	// open "test.jpg"
-	file, err := os.Open("test.jpg")
+	in, err := os.Open("input.jpg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer in.Close()
+
+	img, err := jpeg.Decode(in)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// decode jpeg into image.Image
-	img, err := jpeg.Decode(file)
+	out := resize.Resize(800, 0, img, resize.Lanczos3)
+
+	f, err := os.Create("output.jpg")
 	if err != nil {
 		log.Fatal(err)
 	}
-	file.Close()
+	defer f.Close()
 
-	// resize to width 1000 using Lanczos resampling
-	// and preserve aspect ratio
-	m := resize.Resize(1000, 0, img, resize.Lanczos3)
-
-	out, err := os.Create("test_resized.jpg")
-	if err != nil {
+	if err := jpeg.Encode(f, out, nil); err != nil {
 		log.Fatal(err)
 	}
-	defer out.Close()
-
-	// write new image to file
-	jpeg.Encode(out, m, nil)
 }
 ```
 
-Caveats
--------
+### Interpolation functions
 
-* Optimized access routines are used for `image.RGBA`, `image.NRGBA`, `image.RGBA64`, `image.NRGBA64`, `image.YCbCr`, `image.Gray`, and `image.Gray16` types. All other image types are accessed in a generic way that will result in slow processing speed.
-* JPEG images are stored in `image.YCbCr`. This image format stores data in a way that will decrease processing speed. A resize may be up to 2 times slower than with `image.RGBA`. 
+From fastest to slowest:
 
+| Constant | Notes |
+|---|---|
+| `NearestNeighbor` | No filtering. Only sane for pixel art and masks. |
+| `Bilinear` | Cheap, soft results. Good for previews. |
+| `Bicubic` | Sharper than bilinear, slight ringing. |
+| `MitchellNetravali` | Balanced, works well for photos. |
+| `Lanczos2` | Sharper, some ringing. |
+| `Lanczos3` | Sharpest of the built-in kernels, strongest ringing. |
 
-Downsizing Samples
--------
+For downscaling photos, `Lanczos3` or `MitchellNetravali` are the usual choices.
 
-Downsizing is not as simple as it might look like. Images have to be filtered before they are scaled down, otherwise aliasing might occur.
-Filtering is highly subjective: Applying too much will blur the whole image, too little will make aliasing become apparent.
-Resize tries to provide sane defaults that should suffice in most cases.
+### Decoding formats
 
-### Artificial sample
+`resize` operates on already decoded images; it does not contain image decoders. Import the
+formats you need for their side effects, otherwise `image.Decode` fails with
+`image: unknown format`:
 
-Original image
-![Rings](http://nfnt.github.com/img/rings_lg_orig.png)
+```go
+import (
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 
-<table>
-<tr>
-<th><img src="http://nfnt.github.com/img/rings_300_NearestNeighbor.png" /><br>Nearest-Neighbor</th>
-<th><img src="http://nfnt.github.com/img/rings_300_Bilinear.png" /><br>Bilinear</th>
-</tr>
-<tr>
-<th><img src="http://nfnt.github.com/img/rings_300_Bicubic.png" /><br>Bicubic</th>
-<th><img src="http://nfnt.github.com/img/rings_300_MitchellNetravali.png" /><br>Mitchell-Netravali</th>
-</tr>
-<tr>
-<th><img src="http://nfnt.github.com/img/rings_300_Lanczos2.png" /><br>Lanczos2</th>
-<th><img src="http://nfnt.github.com/img/rings_300_Lanczos3.png" /><br>Lanczos3</th>
-</tr>
-</table>
+	_ "golang.org/x/image/tiff" // optional, TIFF lives outside the standard library
+	_ "golang.org/x/image/bmp"  // optional
+)
+```
 
-### Real-Life sample
+See [`nfnt/resize#68`](https://github.com/nfnt/resize/issues/68) and
+[`#71`](https://github.com/nfnt/resize/issues/71) — those reports were missing imports, not
+library bugs.
 
-Original image  
-![Original](http://nfnt.github.com/img/IMG_3694_720.jpg)
+### Metadata
 
-<table>
-<tr>
-<th><img src="http://nfnt.github.com/img/IMG_3694_300_NearestNeighbor.png" /><br>Nearest-Neighbor</th>
-<th><img src="http://nfnt.github.com/img/IMG_3694_300_Bilinear.png" /><br>Bilinear</th>
-</tr>
-<tr>
-<th><img src="http://nfnt.github.com/img/IMG_3694_300_Bicubic.png" /><br>Bicubic</th>
-<th><img src="http://nfnt.github.com/img/IMG_3694_300_MitchellNetravali.png" /><br>Mitchell-Netravali</th>
-</tr>
-<tr>
-<th><img src="http://nfnt.github.com/img/IMG_3694_300_Lanczos2.png" /><br>Lanczos2</th>
-<th><img src="http://nfnt.github.com/img/IMG_3694_300_Lanczos3.png" /><br>Lanczos3</th>
-</tr>
-</table>
+Resizing always produces a new pixel buffer. **EXIF, ICC profiles and DPI information are not
+carried over.** If you need to preserve them, copy them over yourself or use a decoder/encoder
+that exposes them.
 
+### Colors and alpha
 
-License
--------
+* Inputs with non-premultiplied alpha (`NRGBA`, `NRGBA64`) are premultiplied for filtering.
+* `Resize` returns `*image.RGBA`/`*image.RGBA64` for those inputs, i.e. the result carries
+  premultiplied alpha. Call `draw.Draw` onto an `image.NRGBA` if you need straight alpha again.
+* `image.Paletted` and `image.CMYK` inputs take the generic 16-bit path: correct, but slower and
+  the result is always `*image.RGBA64`.
+* Resampling is not gamma-correct, matching the behaviour of the original package.
 
-Copyright (c) 2012 Jan Schlicht <janschlicht@gmail.com>
-Resize is released under a MIT style license.
+### YCbCr
+
+JPEGs decode to `*image.YCbCr`. For these inputs the package converts the whole image into an
+interleaved `ycc` buffer (3 bytes per pixel) and always emits 4:4:4 output. That is fast and
+avoids chroma-subsampling artifacts, but it costs extra memory — roughly `3 × width × height`
+bytes on top of the decoded image.
+
+### Memory and concurrency
+
+Each call allocates a transposed intermediate image and the result, so peak memory is roughly
+`source + 2 × destination` (more for `YCbCr`). Calls are independent and safe to run
+concurrently; each call fans out to `GOMAXPROCS` goroutines. When resizing many images in
+parallel, consider limiting your own worker count so the two levels of parallelism do not
+oversubscribe the CPU.
+
+## Drop-in replacement for `nfnt/resize`
+
+The module path deliberately stays `github.com/nfnt/resize`, so existing code keeps compiling.
+Point it at this fork with a `replace` directive:
+
+```
+require github.com/nfnt/resize v1.0.0
+
+replace github.com/nfnt/resize => github.com/schankst/resize v1.0.0
+```
+
+Alternatively, `go get github.com/schankst/resize@v1.0.0` works if you import
+`github.com/schankst/resize` — but then the module path in your imports changes.
+
+## Alternatives
+
+If you do not need this exact API, prefer a maintained library:
+
+* [`golang.org/x/image/draw`](https://pkg.go.dev/golang.org/x/image/draw) — the recommendation of
+  the original author; primitive scalers (`ApproxBiLinear`, `BiLinear`, `CatmullRom`), no
+  `Thumbnail` helper.
+* [`github.com/disintegration/imaging`](https://github.com/disintegration/imaging) — higher-level
+  API built on `x/image/draw`, includes filters and EXIF-aware helpers.
+* `libvips` bindings (cgo) for high-throughput server workloads.
+
+## License
+
+ISC — see [LICENSE](LICENSE). Original copyright (c) 2012 Jan Schlicht.
