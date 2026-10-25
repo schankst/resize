@@ -249,7 +249,7 @@ path `github.com/schankst/resize/v2` and corresponding `/v2` imports — the opp
 | Phase | Content | Status |
 |---|---|---|
 | P0 | `go.mod` with its own module path, tags up to `v1.0.3`, ISC title, CI (test/race/staticcheck/govulncheck/cross-compile), README, changelog, docs | **done** |
-| P1 | Panic/overflow hardening with an additive error API, memory reduction, benchmarks | open |
+| P1 | Panic/overflow hardening with an additive error API, memory reduction, benchmarks | in progress — benchmarks and tests done, error API and memory open |
 | P2 | Configurable `blur` (functional options), fast Paletted/CMYK paths | open |
 | P3 | Documentation polish, evaluate the gamma question | open |
 

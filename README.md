@@ -58,8 +58,9 @@ resize.Thumbnail(maxWidth, maxHeight uint, img image.Image, interp resize.Interp
 ```
 
 `Resize` scales to the given dimensions. If either `width` or `height` is `0`, the value is
-calculated from the aspect ratio of the input. `Thumbnail` downscales preserving the aspect ratio,
-never upscales, and returns the input unchanged if it already fits.
+calculated from the aspect ratio of the input; if that calculation rounds down to zero, the
+dimension is clamped to `1` so the result is never empty. `Thumbnail` downscales preserving the
+aspect ratio, never upscales, and returns the input unchanged if it already fits.
 
 ```go
 package main
@@ -143,8 +144,10 @@ that exposes them.
 ### Colors and alpha
 
 * Inputs with non-premultiplied alpha (`NRGBA`, `NRGBA64`) are premultiplied for filtering.
-* `Resize` returns `*image.RGBA`/`*image.RGBA64` for those inputs, i.e. the result carries
-  premultiplied alpha. Call `draw.Draw` onto an `image.NRGBA` if you need straight alpha again.
+  The filtered kernels therefore return `*image.RGBA`/`*image.RGBA64`, i.e. premultiplied alpha.
+  Call `draw.Draw` onto an `image.NRGBA` if you need straight alpha again.
+* `NearestNeighbor` is the exception: it keeps the input format and returns
+  `*image.NRGBA`/`*image.NRGBA64` unchanged in that regard, with no premultiplication.
 * `image.Paletted` and `image.CMYK` inputs take the generic 16-bit path: correct, but slower and
   the result is always `*image.RGBA64`.
 * Resampling is not gamma-correct, matching the behaviour of the original package.

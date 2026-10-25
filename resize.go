@@ -88,6 +88,14 @@ func Resize(width, height uint, img image.Image, interp InterpolationFunction) i
 	if height == 0 {
 		height = uint(0.7 + float64(img.Bounds().Dy())/scaleY)
 	}
+	// Aspect ratio calculations can round down to zero for extreme shapes (e.g. a 4x32 input
+	// resized to height 1). Never return an empty image in that case.
+	if width == 0 {
+		width = 1
+	}
+	if height == 0 {
+		height = 1
+	}
 
 	// Trivial case: return input image
 	if int(width) == img.Bounds().Dx() && int(height) == img.Bounds().Dy() {

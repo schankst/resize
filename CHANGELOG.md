@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `Resize` no longer returns an empty image when the aspect-ratio calculation rounds a dimension
+  down to zero (for example a 4×32 input resized with `height` only). Such dimensions are clamped
+  to `1`. Found by `FuzzResize`.
+- `README.md` documents that `NearestNeighbor` preserves `*image.NRGBA`/`*image.NRGBA64`, while the
+  filtered kernels return premultiplied `*image.RGBA`/`*image.RGBA64`.
+
 ### Changed
 
 - `README.md` shows the unversioned `go get github.com/schankst/resize` and explains which releases
@@ -19,6 +27,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Table-driven test matrix covering every input type (`RGBA`, `NRGBA`, `RGBA64`, `NRGBA64`, `Gray`,
+  `Gray16`, all six `YCbCr` subsampling ratios, `Paletted`, `CMYK` and a generic `image.Image`) with
+  every kernel and four resize directions, pinning the concrete result types, aspect-ratio
+  behaviour, non-zero `Bounds().Min`, the interpolation kernels and the internal `ycc` accessors.
+  Statement coverage is now 99 % (was 63 %).
+- `FuzzResize`: 2.2 million executions over 90 s without a crash; the seed that exposed the
+  degenerate aspect-ratio case is kept in `testdata/fuzz/FuzzResize/`.
 - `bench_test.go`: `BenchmarkResize` covers `RGBA`, `NRGBA`, `Gray` and `YCbCr 4:2:0` with
   `NearestNeighbor`, `Bilinear` and `Lanczos3` in both directions, plus `BenchmarkThumbnail`.
   `docs/benchmarks.md` records the baseline and explains how to compare runs with `benchstat`.
