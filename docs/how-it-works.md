@@ -160,6 +160,11 @@ Special cases in this station:
 
 ### [ARCH-3.5] Why there is a transposed intermediate
 
+> **Status: scheduled for replacement.** This section describes the current implementation. The
+> transposed buffer is the last large allocation in the package; removing it by streaming the
+> vertical pass is the next planned memory improvement. When that lands, this section is rewritten
+> and `[ARCH-3.6]` changes with it.
+
 Pass 1 processes one source row per iteration and writes one column of the intermediate. Storing the
 result column-wise means the horizontal pass has a contiguous input *and* a contiguous output.
 Pass 2 then reads that buffer row-wise.
@@ -178,8 +183,8 @@ Pass 2 then reads that buffer row-wise.
 ```
 
 Without the transpose, pass 2 would have to walk columns with a stride of one row, which is a cache
-miss factory. The cost is one full extra buffer (`source height × target width`); removing it is the
-next planned memory improvement.
+miss factory. The cost is one full extra buffer (`source height × target width`) — the allocation
+this section is scheduled to lose.
 
 ### [ARCH-3.6] The second pass and the result
 

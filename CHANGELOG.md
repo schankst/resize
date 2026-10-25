@@ -48,6 +48,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   path, supported and unsupported formats, fast paths versus the generic fallback, decoder import
   gotchas, metadata and alpha semantics, error handling, memory characteristics, alternatives, and
   the release history (the moved `v1.0.0` tag, the withdrawn `v1.0.1`).
+- `docs/how-it-works.md` marks the transposed intermediate buffer as scheduled for replacement, so
+  the next memory change cannot silently contradict the description.
 - `docs/revival-analysis.md` is now in English, records what happened to each open upstream pull
   request, and documents the decision to keep gamma-correct resampling out of scope (it would change
   pixels for every existing caller and belongs in a new API).
