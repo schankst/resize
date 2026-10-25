@@ -7,7 +7,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [1.0.0] - TBD
+## [1.0.1] - 2026-10-25
+
+Documentation and CI only; the resizing code is unchanged from v1.0.0.
+
+### Fixed
+
+- `README.md` no longer claims that `go get github.com/schankst/resize` works. It does not and
+  cannot: the module deliberately declares the path `github.com/nfnt/resize`, so the `replace`
+  directive is the only way to depend on this fork. Verified against the module proxy.
+- `docs/revival-analysis.md` records the P0 status and the verified drop-in setup.
+
+### Changed
+
+- CI cross-compile matrix targets `windows/arm64` instead of the 32-bit `windows/arm` port, which
+  the Go toolchain removed in 1.26. All other targets and the stable toolchain requirement are
+  unchanged.
+
+## [1.0.0] - 2026-10-25
 
 First release of the maintained fork. Behaviour is identical to the final upstream state
 (`nfnt/resize@83c6a99`, 2018-02-21); the release is about making the package usable again, not
@@ -43,5 +60,6 @@ about changing pixels.
   `docs/revival-analysis.md`. Notably upstream PR #67 (`Bounds().Max` instead of `Bounds().Dx()`)
   is incorrect and was intentionally not applied.
 
-[Unreleased]: https://github.com/schankst/resize/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/schankst/resize/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/schankst/resize/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/schankst/resize/releases/tag/v1.0.0
