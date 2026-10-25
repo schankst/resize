@@ -94,7 +94,7 @@ deshalb hier, und die Übernahme passiert als eigener Commit in diesem Fork.
 |---|---|---|
 | #70 Add go.mod | offen, ungemergt | Umgesetzt in `v1.0.0` (`f6bfb7c`); seit `v1.0.3` zusätzlich mit eigenem Modulpfad, also über den PR hinaus |
 | #67 `Bounds().Max` | offen, ungemergt | **Abgelehnt** — Patch ist sachlich falsch (siehe Tabelle oben), Begründung gehört in dieses Dokument, nicht in den PR |
-| #66 ppc64le-CI | offen, ungemergt | Travis-Teil überholt (`.travis.yml` entfernt), die Absicht übernommen: `linux/ppc64le` ist in der Cross-Compile-Matrix |
+| #66 ppc64le-CI | offen, ungemergt | Travis-Teil überholt (`.travis.yml` entfernt). `linux/ppc64le` wird **nicht** übernommen — keine Zielplattform dieses Forks. Der Code ist architekturunabhängig; wer ppc64le braucht, baut problemlos selbst (verifiziert). |
 | #48 ISC-Titelzeile | offen, ungemergt | **Übernommen** in `v1.0.0` (`45697f6`) |
 | #43 Benchmarks | offen, ungemergt | Zahlen nicht übernommen; ersetzt durch Issue #3 (eigene, reproduzierbare Benchmarks) |
 

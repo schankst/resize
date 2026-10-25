@@ -12,9 +12,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `docs/revival-analysis.md` now records what happened to each of the five open upstream pull
   requests: nothing upstream (the repository is archived and read-only), with the decision and the
   corresponding commit in this fork documented instead.
-- Cross-compile coverage for `linux/ppc64le`, `linux/s390x`, `linux/riscv64` and `linux/loong64`
-  in a dedicated job. `linux/ppc64le` is what upstream PR #66 was after; the Travis part of that PR
-  is obsolete.
+- CI cross-compiles only the targets this fork supports: `linux/amd64`, `linux/arm64`,
+  `darwin/arm64`, `windows/amd64`, `windows/arm64`, plus 32-bit ARM Linux with `GOARM=6` (Raspberry
+  Pi 1, Zero) and `GOARM=7` (Pi 2 v1.2+, Pi 3/4/5 with a 32-bit OS). Exotic architectures are no
+  longer built; the code remains architecture-independent.
 
 ## [1.0.3] - 2026-10-25
 
