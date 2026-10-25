@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-25
+
 ### Added
 
 - `ResizeE` and `ThumbnailE`: same behaviour as `Resize` and `Thumbnail`, but they return an error
@@ -151,7 +153,8 @@ about changing pixels.
   `docs/revival-analysis.md`. Notably upstream PR #67 (`Bounds().Max` instead of `Bounds().Dx()`)
   is incorrect and was intentionally not applied.
 
-[Unreleased]: https://github.com/schankst/resize/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/schankst/resize/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/schankst/resize/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/schankst/resize/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/schankst/resize/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/schankst/resize/compare/v1.0.0...v1.0.1

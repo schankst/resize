@@ -261,7 +261,7 @@ have calibrated against for a decade.
 
 | Phase | Content | Status |
 |---|---|---|
-| P0 | `go.mod` with its own module path, tags up to `v1.0.3`, ISC title, CI (test/race/staticcheck/govulncheck/cross-compile), README, changelog, docs | **done** |
+| P0 | `go.mod` with its own module path, tags up to `v1.1.0`, ISC title, CI (test/race/staticcheck/govulncheck/cross-compile), README, changelog, docs | **done** |
 | P1 | Panic/overflow hardening with an additive error API, memory reduction, benchmarks | done except the transposed intermediate buffer |
 | P2 | Configurable `blur` (functional options), fast Paletted/CMYK paths | open |
 | P3 | Documentation polish, evaluate the gamma question | done — gamma-correct resampling stays out of scope, see above |
