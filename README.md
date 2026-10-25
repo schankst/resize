@@ -1,13 +1,14 @@
 # resize
 
 [![CI](https://github.com/schankst/resize/actions/workflows/ci.yml/badge.svg)](https://github.com/schankst/resize/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/schankst/resize.svg)](https://pkg.go.dev/github.com/schankst/resize)
 [![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
 Image resizing for the Go programming language with common interpolation methods.
 
 This repository is a **maintained fork** of the original [`nfnt/resize`](https://github.com/nfnt/resize),
-which was archived by its author in 2022. The fork keeps the same import path and API so it can be
-used as a drop-in replacement.
+which was archived by its author in 2022. The API is unchanged; the import path is
+`github.com/schankst/resize`.
 
 ## Features
 
@@ -20,49 +21,31 @@ used as a drop-in replacement.
 
 ## Installation
 
-**`go get github.com/nfnt/resize` does not install this fork.** That path resolves to the archived
-upstream repository. This fork deliberately keeps the module path `github.com/nfnt/resize` so that
-existing code compiles unchanged, which means it is consumed through a `replace` directive.
+```bash
+go get github.com/schankst/resize
+```
 
-In a module that already depends on `github.com/nfnt/resize`:
+Pin a release if you need reproducible builds:
 
 ```bash
-go mod edit -replace=github.com/nfnt/resize=github.com/schankst/resize@v1.0.2
+go get github.com/schankst/resize@v1.0.3
+```
+
+Requires Go 1.18 or newer.
+
+## Migrating from `nfnt/resize`
+
+The API is identical, so only the import path changes:
+
+```bash
+go get github.com/schankst/resize@v1.0.3
+grep -rl 'github.com/nfnt/resize' --include='*.go' . | xargs sed -i 's|github.com/nfnt/resize|github.com/schankst/resize|g'
 go mod tidy
 ```
 
-In a new module:
-
-```bash
-go mod init example.com/myapp
-go mod edit -require=github.com/nfnt/resize@v1.0.2
-go mod edit -replace=github.com/nfnt/resize=github.com/schankst/resize@v1.0.2
-go mod tidy
-```
-
-The equivalent `go.mod`:
-
-```
-require github.com/nfnt/resize v1.0.2
-
-replace github.com/nfnt/resize => github.com/schankst/resize v1.0.2
-```
-
-Imports stay `github.com/nfnt/resize`; no source change is needed. Requires Go 1.18 or newer.
-
-Check that the fork is actually in use:
-
-```bash
-go list -m all | grep nfnt
-# github.com/nfnt/resize v1.0.2 => github.com/schankst/resize v1.0.2
-```
-
-Two consequences of the `replace` approach:
-
-* `go get -u` does **not** upgrade a replaced module. Bump the version on the right-hand side
-  yourself.
-* `go get github.com/schankst/resize@v1.0.2` fails with
-  `module declares its path as: github.com/nfnt/resize`. That is expected, not a bug.
+That is `github.com/nfnt/resize` → `github.com/schankst/resize` in imports and call sites; nothing
+else. If you cannot change imports right now, `v1.0.2` is the last release that still declares the
+original module path and can be used with a `replace` directive.
 
 ## Usage
 
@@ -85,7 +68,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/nfnt/resize"
+	"github.com/schankst/resize"
 )
 
 func main() {
@@ -179,18 +162,6 @@ Each call allocates a transposed intermediate image and the result, so peak memo
 concurrently; each call fans out to `GOMAXPROCS` goroutines. When resizing many images in
 parallel, consider limiting your own worker count so the two levels of parallelism do not
 oversubscribe the CPU.
-
-## Why the module path stays `github.com/nfnt/resize`
-
-Keeping the original module path is what makes this fork a drop-in replacement: existing imports,
-`go.mod` entries and call sites keep working, and the fork can be swapped in or out with a single
-`replace` line. The trade-offs are the awkward install shown above and the fact that
-[pkg.go.dev](https://pkg.go.dev/github.com/nfnt/resize) documents the module path, which resolves
-to the archived upstream rather than to this repository.
-
-If you would rather depend on the fork directly, rename the module path in your own copy
-(`module github.com/schankst/resize`) and adjust every import — but then it is no longer a drop-in
-replacement for code that imports the original path.
 
 ## Alternatives
 

@@ -1,3 +1,3 @@
-module github.com/nfnt/resize
+module github.com/schankst/resize
 
 go 1.18

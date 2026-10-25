@@ -163,19 +163,24 @@ Der Fork ist **revival-fähig mit sehr geringem Aufwand** (~2–4 Dev-Tage agent
 
 ### Entscheidung zum Fork-Status
 
-Der Fork ist seit 2026-10-25 **public** und mit `v1.0.0`/`v1.0.1` getaggt. Der `replace`-Block ist
-verifiziert (Testmodul, das `github.com/nfnt/resize` importiert und gegen
-`github.com/schankst/resize v1.0.1` ersetzt — `go mod tidy`, `go run` und `go list -m all` OK über
-den Module Proxy). Ein direktes `go get` des Fork-Pfads ist bewusst nicht möglich.
-Ein direktes `go get github.com/schankst/resize` schlägt bewusst fehl, weil der Modulpfad
-`github.com/nfnt/resize` bleibt; auch `go get github.com/nfnt/resize` holt das Original, nicht den
-Fork.
+Der Fork ist seit 2026-10-25 **public** und getaggt. Ab `v1.0.3` lautet der Modulpfad
+`github.com/schankst/resize`; Installation ist damit ein einzelner Befehl
+(`go get github.com/schankst/resize`). Die API bleibt identisch, nur die Importpfade ändern sich.
+
+Bis `v1.0.2` behielt das Modul den Pfad `github.com/nfnt/resize`, damit ein `replace`-Block als
+Drop-in funktioniert. Das war technisch korrekt, aber unpraktisch: `go get github.com/nfnt/resize`
+holt das archivierte Original, ein direktes `go get` des Forks ist mit diesem Pfad unmöglich.
+`v1.0.2` bleibt als letzte Release mit Originalpfad verfügbar, falls jemand Imports nicht anfassen
+kann.
+
+Nebenbefund zur SemVer: `v2.0.0` wäre der falsche Weg, weil Go dann den Modulpfad
+`github.com/schankst/resize/v2` und entsprechend `/v2`-Imports erzwingt — das Gegenteil von einfach.
 
 ### Umsetzungsstand (Stand 2026-10-25)
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| P0 | `go.mod`, Tags `v1.0.0`/`v1.0.1`, ISC-Titel, CI (test/race/staticcheck/govulncheck/cross-compile), README, Changelog, Doku | **erledigt** |
+| P0 | `go.mod` mit eigenem Modulpfad, Tags bis `v1.0.3`, ISC-Titel, CI (test/race/staticcheck/govulncheck/cross-compile), README, Changelog, Doku | **erledigt** |
 | P1 | Panic-/Overflow-Härtung mit additiver Fehler-API, Speicherreduktion, Benchmarks | offen |
 | P2 | Konfigurierbares `blur` (funktionale Optionen), schnelle Paletted/CMYK-Pfade | offen |
 | P3 | Doku-Feinschliff, Gamma-Frage bewerten | offen |

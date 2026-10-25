@@ -7,6 +7,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-25
+
+### Changed
+
+- **Module path is now `github.com/schankst/resize`** (was `github.com/nfnt/resize`). This makes the
+  fork installable with a plain `go get github.com/schankst/resize` — no `replace` directive, no
+  path mismatch. The API is unchanged; only the import path differs, so migrating is
+  `github.com/nfnt/resize` → `github.com/schankst/resize`.
+- `v1.0.2` remains the last release that declares the original module path, for consumers that
+  cannot change imports. Note that Go requires the import path to match the module path, so the two
+  cannot be offered by the same tag series.
+- The pkg.go.dev badge is back, now that the module path resolves to this repository.
+
 ## [1.0.2] - 2026-10-25
 
 Documentation only; the resizing code is unchanged.
@@ -74,7 +87,8 @@ about changing pixels.
   `docs/revival-analysis.md`. Notably upstream PR #67 (`Bounds().Max` instead of `Bounds().Dx()`)
   is incorrect and was intentionally not applied.
 
-[Unreleased]: https://github.com/schankst/resize/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/schankst/resize/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/schankst/resize/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/schankst/resize/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/schankst/resize/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/schankst/resize/releases/tag/v1.0.0
