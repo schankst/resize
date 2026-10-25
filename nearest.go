@@ -8,6 +8,7 @@ package resize
 
 import "image"
 
+// [ARCH-3.8] Saturating conversion for the nearest-neighbour path.
 func floatToUint8(x float32) uint8 {
 	// Nearest-neighbor values are always
 	// positive no need to check lower-bound.
@@ -17,6 +18,7 @@ func floatToUint8(x float32) uint8 {
 	return uint8(x)
 }
 
+// [ARCH-3.8] Saturating conversion for the nearest-neighbour path.
 func floatToUint16(x float32) uint16 {
 	if x > 0xfffe {
 		return 0xffff
@@ -24,6 +26,7 @@ func floatToUint16(x float32) uint16 {
 	return uint16(x)
 }
 
+// [ARCH-3.8] Nearest-neighbour fallback for custom image types.
 func nearestGeneric(in image.Image, out *image.RGBA64, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -69,6 +72,7 @@ func nearestGeneric(in image.Image, out *image.RGBA64, scale float64, coeffs []b
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour loop, used for both passes.
 func nearestRGBA(in *image.RGBA, out *image.RGBA, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -108,6 +112,7 @@ func nearestRGBA(in *image.RGBA, out *image.RGBA, scale float64, coeffs []bool, 
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour loop.
 func nearestNRGBA(in *image.NRGBA, out *image.NRGBA, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -147,6 +152,7 @@ func nearestNRGBA(in *image.NRGBA, out *image.NRGBA, scale float64, coeffs []boo
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour loop, used for both passes.
 func nearestRGBA64(in *image.RGBA64, out *image.RGBA64, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -194,6 +200,7 @@ func nearestRGBA64(in *image.RGBA64, out *image.RGBA64, scale float64, coeffs []
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour loop.
 func nearestNRGBA64(in *image.NRGBA64, out *image.NRGBA64, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -241,6 +248,7 @@ func nearestNRGBA64(in *image.NRGBA64, out *image.NRGBA64, scale float64, coeffs
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour loop, used for both passes.
 func nearestGray(in *image.Gray, out *image.Gray, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -272,6 +280,7 @@ func nearestGray(in *image.Gray, out *image.Gray, scale float64, coeffs []bool, 
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour loop, used for both passes.
 func nearestGray16(in *image.Gray16, out *image.Gray16, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1

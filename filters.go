@@ -10,6 +10,7 @@ import (
 	"math"
 )
 
+// [ARCH-3.3] Kernel weights.
 func nearest(in float64) float64 {
 	if in >= -0.5 && in < 0.5 {
 		return 1
@@ -17,6 +18,7 @@ func nearest(in float64) float64 {
 	return 0
 }
 
+// [ARCH-3.3] Kernel weights.
 func linear(in float64) float64 {
 	in = math.Abs(in)
 	if in <= 1 {
@@ -25,6 +27,7 @@ func linear(in float64) float64 {
 	return 0
 }
 
+// [ARCH-3.3] Kernel weights.
 func cubic(in float64) float64 {
 	in = math.Abs(in)
 	if in <= 1 {
@@ -36,6 +39,7 @@ func cubic(in float64) float64 {
 	return 0
 }
 
+// [ARCH-3.3] Kernel weights.
 func mitchellnetravali(in float64) float64 {
 	in = math.Abs(in)
 	if in <= 1 {
@@ -47,6 +51,7 @@ func mitchellnetravali(in float64) float64 {
 	return 0
 }
 
+// [ARCH-3.3] Kernel helper.
 func sinc(x float64) float64 {
 	x = math.Abs(x) * math.Pi
 	if x >= 1.220703e-4 {
@@ -55,6 +60,7 @@ func sinc(x float64) float64 {
 	return 1
 }
 
+// [ARCH-3.3] Kernel weights.
 func lanczos2(in float64) float64 {
 	if in > -2 && in < 2 {
 		return sinc(in) * sinc(in*0.5)
@@ -62,6 +68,7 @@ func lanczos2(in float64) float64 {
 	return 0
 }
 
+// [ARCH-3.3] Kernel weights.
 func lanczos3(in float64) float64 {
 	if in > -3 && in < 3 {
 		return sinc(in) * sinc(in*0.3333333333333333)
@@ -69,6 +76,7 @@ func lanczos3(in float64) float64 {
 	return 0
 }
 
+// [ARCH-3.3] Coefficient table for the 8-bit paths.
 // range [-256,256]
 func createWeights8(dy, filterLength int, blur, scale float64, kernel func(float64) float64) ([]int16, []int, int) {
 	filterLength = filterLength * int(math.Max(math.Ceil(blur*scale), 1))
@@ -89,6 +97,7 @@ func createWeights8(dy, filterLength int, blur, scale float64, kernel func(float
 	return coeffs, start, filterLength
 }
 
+// [ARCH-3.3] Coefficient table for the 16-bit paths.
 // range [-65536,65536]
 func createWeights16(dy, filterLength int, blur, scale float64, kernel func(float64) float64) ([]int32, []int, int) {
 	filterLength = filterLength * int(math.Max(math.Ceil(blur*scale), 1))
@@ -109,6 +118,7 @@ func createWeights16(dy, filterLength int, blur, scale float64, kernel func(floa
 	return coeffs, start, filterLength
 }
 
+// [ARCH-3.3] Boolean tap table for the nearest-neighbour path.
 func createWeightsNearest(dy, filterLength int, blur, scale float64) ([]bool, []int, int) {
 	filterLength = filterLength * int(math.Max(math.Ceil(blur*scale), 1))
 	filterFactor := math.Min(1./(blur*scale), 1)

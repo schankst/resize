@@ -32,6 +32,7 @@ func (p *ycc) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
+// [ARCH-3.7] One interleaved row for the streaming YCbCr path.
 // yccRow returns row y of the image as w*3 interleaved Y, Cb, Cr bytes. The returned slice aliases
 // Pix, so it must be treated as read-only.
 func (p *ycc) yccRow(y int, _ []byte) []byte {
@@ -40,6 +41,7 @@ func (p *ycc) yccRow(y int, _ []byte) []byte {
 	return p.Pix[start : start+w*3]
 }
 
+// [ARCH-3.7] Row width reported to the filtering loop.
 func (p *ycc) width() int { return p.Bounds().Dx() }
 
 // yccRowSource yields one interleaved Y, Cb, Cr row at a time. Streaming the rows keeps the
@@ -134,6 +136,7 @@ func (p *ycc) SubImage(r image.Rectangle) image.Image {
 	}
 }
 
+// [ARCH-3.9] Interleaved Y, Cb, Cr buffer.
 // newYCC returns a new ycc with the given bounds and subsample ratio.
 func newYCC(r image.Rectangle, s image.YCbCrSubsampleRatio) *ycc {
 	w, h := r.Dx(), r.Dy()
@@ -152,6 +155,7 @@ const (
 	ycbcrSubsampleRatio410
 )
 
+// [ARCH-3.9] Convert back to *image.YCbCr (always 4:4:4).
 // YCbCr converts ycc to a YCbCr image with the same subsample ratio
 // as the YCbCr image that ycc was generated from.
 func (p *ycc) YCbCr() *image.YCbCr {
@@ -173,6 +177,7 @@ func (p *ycc) YCbCr() *image.YCbCr {
 	return ycbcr
 }
 
+// [ARCH-3.9] Plane writer for the result conversion.
 func (p *ycc) ycbcr422(ycbcr *image.YCbCr) *image.YCbCr {
 	var off int
 	Pix := p.Pix
@@ -193,6 +198,7 @@ func (p *ycc) ycbcr422(ycbcr *image.YCbCr) *image.YCbCr {
 	return ycbcr
 }
 
+// [ARCH-3.9] Plane writer for the result conversion.
 func (p *ycc) ycbcr420(ycbcr *image.YCbCr) *image.YCbCr {
 	var off int
 	Pix := p.Pix
@@ -213,6 +219,7 @@ func (p *ycc) ycbcr420(ycbcr *image.YCbCr) *image.YCbCr {
 	return ycbcr
 }
 
+// [ARCH-3.9] Plane writer for the result conversion.
 func (p *ycc) ycbcr440(ycbcr *image.YCbCr) *image.YCbCr {
 	var off int
 	Pix := p.Pix
@@ -233,6 +240,7 @@ func (p *ycc) ycbcr440(ycbcr *image.YCbCr) *image.YCbCr {
 	return ycbcr
 }
 
+// [ARCH-3.9] Plane writer for the result conversion.
 func (p *ycc) ycbcr444(ycbcr *image.YCbCr) *image.YCbCr {
 	var off int
 	Pix := p.Pix
@@ -253,6 +261,7 @@ func (p *ycc) ycbcr444(ycbcr *image.YCbCr) *image.YCbCr {
 	return ycbcr
 }
 
+// [ARCH-3.9] Plane writer for the result conversion.
 func (p *ycc) ycbcr411(ycbcr *image.YCbCr) *image.YCbCr {
 	var off int
 	Pix := p.Pix
@@ -273,6 +282,7 @@ func (p *ycc) ycbcr411(ycbcr *image.YCbCr) *image.YCbCr {
 	return ycbcr
 }
 
+// [ARCH-3.9] Plane writer for the result conversion.
 func (p *ycc) ycbcr410(ycbcr *image.YCbCr) *image.YCbCr {
 	var off int
 	Pix := p.Pix

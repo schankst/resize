@@ -147,6 +147,8 @@ func interpolationFunctions() []struct {
 
 // TestResizeMatrix pins the behaviour of every input type with every kernel and direction,
 // including the concrete result type.
+//
+// Covers [ARCH-3.2].
 func TestResizeMatrix(t *testing.T) {
 	directions := []struct {
 		name string
@@ -193,6 +195,8 @@ func TestResizeMatrix(t *testing.T) {
 
 // TestResizeSubImageBounds covers inputs whose Bounds().Min is not (0,0). The pixel data of a
 // SubImage starts at that offset, which the fast paths index into directly.
+//
+// Covers [ARCH-3.4].
 func TestResizeSubImageBounds(t *testing.T) {
 	base := image.Rect(0, 0, 32, 32)
 	inner := image.Rect(5, 7, 27, 25)
@@ -218,6 +222,8 @@ func TestResizeSubImageBounds(t *testing.T) {
 }
 
 // TestResizeAspectRatio covers the width==0 and height==0 shorthand.
+//
+// Covers [ARCH-3.1].
 func TestResizeAspectRatio(t *testing.T) {
 	img := image.NewRGBA(image.Rect(0, 0, 64, 32))
 	fill(img, 64, 32)
@@ -242,6 +248,8 @@ func TestResizeAspectRatio(t *testing.T) {
 }
 
 // TestKernels exercises every interpolation kernel, including their zero crossings.
+//
+// Covers [ARCH-3.3].
 func TestKernels(t *testing.T) {
 	for _, in := range interpolationFunctions() {
 		taps, k := in.fn.kernel()
@@ -264,6 +272,8 @@ func TestKernels(t *testing.T) {
 }
 
 // TestYCCAccessors covers the image.Image implementation of the internal ycc type.
+//
+// Covers [ARCH-3.9].
 func TestYCCAccessors(t *testing.T) {
 	p := newYCC(image.Rect(0, 0, 4, 3), image.YCbCrSubsampleRatio420)
 	if p.Bounds() != image.Rect(0, 0, 4, 3) {
@@ -293,6 +303,8 @@ func TestYCCAccessors(t *testing.T) {
 }
 
 // TestThumbnailMatrix covers the thumbnail helper for every input type.
+//
+// Covers [ARCH-3.1].
 func TestThumbnailMatrix(t *testing.T) {
 	for _, c := range imageCases() {
 		t.Run(c.name, func(t *testing.T) {

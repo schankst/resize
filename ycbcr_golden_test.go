@@ -61,6 +61,7 @@ func pixelHash(img image.Image) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// Covers [ARCH-3.7].
 func TestYCbCrGolden(t *testing.T) {
 	const path = "testdata/ycbcr_golden.txt"
 	got := goldenCases()

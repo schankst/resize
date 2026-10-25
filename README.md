@@ -246,6 +246,9 @@ If you do not need this exact API, prefer a maintained library:
 
 ## Documentation
 
+* [`docs/how-it-works.md`](docs/how-it-works.md) — how the two-pass resampler works, which function
+  sits at which stage, with diagrams. Source comments reference its numbered sections as
+  `[ARCH-3.4]`, and a test keeps those references valid.
 * [`docs/benchmarks.md`](docs/benchmarks.md) — measured baseline, how to reproduce it, and the
   before/after numbers of the YCbCr memory work.
 * [`docs/revival-analysis.md`](docs/revival-analysis.md) — audit of the archived upstream

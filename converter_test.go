@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// Covers [ARCH-3.4].
 func Test_ClampUint8(t *testing.T) {
 	var testData = []struct {
 		in       int32
@@ -27,6 +28,7 @@ func Test_ClampUint8(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_ClampUint16(t *testing.T) {
 	var testData = []struct {
 		in       int64

@@ -11,6 +11,10 @@
 // Various interpolation methods are provided and multiple processors may be
 // utilized in the computations.
 //
+// The internals are described in docs/how-it-works.md: [ARCH-1] gives the overview, [ARCH-1.1]
+// lists the public API, [ARCH-1.2] maps files to responsibilities, [ARCH-2] pictures the pipeline
+// and [ARCH-7] defines the terminology.
+//
 // Example:
 //
 //	imgResized := resize.Resize(1000, 0, imgOld, resize.MitchellNetravali)
@@ -92,6 +96,8 @@ const MaxDimension = math.MaxInt32
 //
 // Resize panics if img is nil or the requested dimensions cannot be allocated; use ResizeE if you
 // need to handle those cases as errors.
+//
+// [ARCH-3.1] Entry and validation; see docs/how-it-works.md.
 func Resize(width, height uint, img image.Image, interp InterpolationFunction) image.Image {
 	out, err := ResizeE(width, height, img, interp)
 	if err != nil {
@@ -102,6 +108,8 @@ func Resize(width, height uint, img image.Image, interp InterpolationFunction) i
 
 // ResizeE is like Resize but reports invalid input instead of panicking. For every input that
 // Resize can handle, the result is identical.
+//
+// [ARCH-3.1] Entry and validation.
 func ResizeE(width, height uint, img image.Image, interp InterpolationFunction) (image.Image, error) {
 	if img == nil {
 		return nil, ErrNilImage
@@ -123,6 +131,7 @@ func ResizeE(width, height uint, img image.Image, interp InterpolationFunction) 
 	return resizeImage(width, height, scaleX, scaleY, img, interp), nil
 }
 
+// [ARCH-3.1] Aspect-ratio resolution.
 // resolveSize fills in a zero width or height from the aspect ratio and clamps the result to at
 // least one pixel.
 func resolveSize(width, height uint, bounds image.Rectangle) (uint, uint, float64, float64) {
@@ -144,6 +153,7 @@ func resolveSize(width, height uint, bounds image.Rectangle) (uint, uint, float6
 	return width, height, scaleX, scaleY
 }
 
+// [ARCH-3.1] Dimension validation, runs before any allocation.
 // validateSize rejects dimension combinations whose pixel buffers would overflow int. All internal
 // buffers use at most 8 bytes per pixel (16-bit RGBA); the transposed intermediate is sized from
 // the source's other dimension.
@@ -164,6 +174,7 @@ func validateSize(width, height uint, bounds image.Rectangle) error {
 	return nil
 }
 
+// [ARCH-3.1] Overflow-safe allocation check used by validateSize.
 // fitsProduct reports whether a*b*bytesPerPixel fits into an int on this platform. The
 // multiplication is done by division so that it cannot overflow uint64 itself.
 func fitsProduct(a, b, bytesPerPixel uint64) bool {
@@ -177,6 +188,8 @@ func fitsProduct(a, b, bytesPerPixel uint64) bool {
 	return b <= maxPixels/a
 }
 
+// [ARCH-3.2] Type dispatch. Every branch below is one instance of the stages described in
+// [ARCH-3]; the two convolution passes are [ARCH-3.4] and [ARCH-3.6].
 func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, interp InterpolationFunction) image.Image {
 	// Trivial case: return input image
 	if int(width) == img.Bounds().Dx() && int(height) == img.Bounds().Dy() {
@@ -204,7 +217,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		temp := image.NewRGBA(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.4] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeights8(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -216,7 +229,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.6] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeights8(result.Bounds().Dy(), taps, blur, scaleY, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -233,7 +246,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		temp := image.NewRGBA(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.4] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeights8(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -245,7 +258,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.6] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeights8(result.Bounds().Dy(), taps, blur, scaleY, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -295,7 +308,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		temp := image.NewRGBA64(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewRGBA64(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.4] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeights16(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -307,7 +320,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.6] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeights16(result.Bounds().Dy(), taps, blur, scaleY, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -324,7 +337,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		temp := image.NewRGBA64(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewRGBA64(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.4] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeights16(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -336,7 +349,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.6] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeights16(result.Bounds().Dy(), taps, blur, scaleY, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -353,7 +366,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		temp := image.NewGray(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewGray(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.4] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeights8(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -365,7 +378,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.6] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeights8(result.Bounds().Dy(), taps, blur, scaleY, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -382,7 +395,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		temp := image.NewGray16(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewGray16(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.4] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeights16(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -394,7 +407,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.6] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeights16(result.Bounds().Dy(), taps, blur, scaleY, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -411,7 +424,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		temp := image.NewRGBA64(image.Rect(0, 0, img.Bounds().Dy(), int(width)))
 		result := image.NewRGBA64(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.4] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeights16(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -423,7 +436,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.6] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeights16(result.Bounds().Dy(), taps, blur, scaleY, kernel)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -438,6 +451,7 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour path.
 func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, interp InterpolationFunction) image.Image {
 	taps, _ := interp.kernel()
 	cpus := runtime.GOMAXPROCS(0)
@@ -449,7 +463,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		temp := image.NewRGBA(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.8] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -461,7 +475,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.8] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeightsNearest(result.Bounds().Dy(), taps, blur, scaleY)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -478,7 +492,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		temp := image.NewNRGBA(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewNRGBA(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.8] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -490,7 +504,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.8] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeightsNearest(result.Bounds().Dy(), taps, blur, scaleY)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -504,8 +518,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		return result
 	case *image.YCbCr:
 		// 8-bit precision
-		// accessing the YCbCr arrays in a tight loop is slow.
-		// converting the image to ycc increases performance by 2x.
+		// Rows are expanded from the Y/Cb/Cr planes on demand, see [ARCH-3.7].
 		temp := newYCC(image.Rect(0, 0, input.Bounds().Dy(), int(width)), input.SubsampleRatio)
 		result := newYCC(image.Rect(0, 0, int(width), int(height)), image.YCbCrSubsampleRatio444)
 
@@ -537,7 +550,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		temp := image.NewRGBA64(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewRGBA64(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.8] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -549,7 +562,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.8] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeightsNearest(result.Bounds().Dy(), taps, blur, scaleY)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -566,7 +579,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		temp := image.NewNRGBA64(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewNRGBA64(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.8] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -578,7 +591,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.8] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeightsNearest(result.Bounds().Dy(), taps, blur, scaleY)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -595,7 +608,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		temp := image.NewGray(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewGray(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.8] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -607,7 +620,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.8] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeightsNearest(result.Bounds().Dy(), taps, blur, scaleY)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -624,7 +637,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		temp := image.NewGray16(image.Rect(0, 0, input.Bounds().Dy(), int(width)))
 		result := image.NewGray16(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.8] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -636,7 +649,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.8] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeightsNearest(result.Bounds().Dy(), taps, blur, scaleY)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -653,7 +666,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		temp := image.NewRGBA64(image.Rect(0, 0, img.Bounds().Dy(), int(width)))
 		result := image.NewRGBA64(image.Rect(0, 0, int(width), int(height)))
 
-		// horizontal filter, results in transposed temporary image
+		// [ARCH-3.8] horizontal pass; the result is written as a transposed intermediate ([ARCH-3.5])
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -665,7 +678,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		}
 		wg.Wait()
 
-		// horizontal filter on transposed image, result is not transposed
+		// [ARCH-3.8] vertical pass over the transposed intermediate
 		coeffs, offset, filterLength = createWeightsNearest(result.Bounds().Dy(), taps, blur, scaleY)
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
@@ -681,7 +694,7 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 
 }
 
-// Calculates scaling factors using old and new image dimensions.
+// [ARCH-3.1] calcFactors derives the scaling factors from the source and target dimensions.
 func calcFactors(width, height uint, oldWidth, oldHeight float64) (scaleX, scaleY float64) {
 	if width == 0 {
 		if height == 0 {
@@ -707,11 +720,13 @@ type imageWithSubImage interface {
 	SubImage(image.Rectangle) image.Image
 }
 
+// [ARCH-4] Row-range split for the parallel passes.
 func makeSlice(img imageWithSubImage, i, n int) image.Image {
 	return img.SubImage(image.Rect(img.Bounds().Min.X, img.Bounds().Min.Y+i*img.Bounds().Dy()/n, img.Bounds().Max.X, img.Bounds().Min.Y+(i+1)*img.Bounds().Dy()/n))
 }
 
-// makeColSlice is makeSlice's counterpart for column ranges.
+// [ARCH-4] makeColSlice is makeSlice's counterpart for column ranges, used for YCbCr so each
+// source row is expanded exactly once.
 func makeColSlice(img imageWithSubImage, i, n int) image.Image {
 	b := img.Bounds()
 	return img.SubImage(image.Rect(b.Min.X+i*b.Dx()/n, b.Min.Y, b.Min.X+(i+1)*b.Dx()/n, b.Max.Y))

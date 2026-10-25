@@ -31,6 +31,7 @@ var thumbnailTests = []struct {
 	{200, 250, 200, 150, 120, 150},
 }
 
+// Covers [ARCH-3.1].
 func TestThumbnail(t *testing.T) {
 	for i, tt := range thumbnailTests {
 		img := image.NewGray16(image.Rect(0, 0, tt.origWidth, tt.origHeight))

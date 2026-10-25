@@ -88,6 +88,8 @@ func benchImages() []struct {
 }
 
 // BenchmarkResize measures the full resize pipeline for every image type, kernel and direction.
+//
+// Covers [ARCH-5].
 func BenchmarkResize(b *testing.B) {
 	interps := []struct {
 		name string
@@ -122,6 +124,8 @@ func BenchmarkResize(b *testing.B) {
 }
 
 // BenchmarkThumbnail measures the aspect-ratio preserving downscale helper.
+//
+// Covers [ARCH-5].
 func BenchmarkThumbnail(b *testing.B) {
 	for _, im := range benchImages() {
 		b.Run(im.name, func(b *testing.B) {

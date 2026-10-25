@@ -21,6 +21,7 @@ func init() {
 	img.Set(1, 1, color.White)
 }
 
+// Covers [ARCH-3.1].
 func Test_Param1(t *testing.T) {
 	m := Resize(0, 0, img, NearestNeighbor)
 	if m.Bounds() != img.Bounds() {
@@ -28,6 +29,7 @@ func Test_Param1(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.1].
 func Test_Param2(t *testing.T) {
 	m := Resize(100, 0, img, NearestNeighbor)
 	if m.Bounds() != image.Rect(0, 0, 100, 100) {
@@ -35,6 +37,7 @@ func Test_Param2(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.1].
 func Test_ZeroImg(t *testing.T) {
 	zeroImg := image.NewGray16(image.Rect(0, 0, 0, 0))
 
@@ -44,6 +47,7 @@ func Test_ZeroImg(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.1].
 func Test_HalfZeroImg(t *testing.T) {
 	zeroImg := image.NewGray16(image.Rect(0, 0, 0, 100))
 
@@ -58,6 +62,7 @@ func Test_HalfZeroImg(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_CorrectResize(t *testing.T) {
 	zeroImg := image.NewGray16(image.Rect(0, 0, 256, 256))
 
@@ -67,6 +72,7 @@ func Test_CorrectResize(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_SameColorWithRGBA(t *testing.T) {
 	img := image.NewRGBA(image.Rect(0, 0, 20, 20))
 	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -85,6 +91,7 @@ func Test_SameColorWithRGBA(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_SameColorWithNRGBA(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 20, 20))
 	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -103,6 +110,7 @@ func Test_SameColorWithNRGBA(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_SameColorWithRGBA64(t *testing.T) {
 	img := image.NewRGBA64(image.Rect(0, 0, 20, 20))
 	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -121,6 +129,7 @@ func Test_SameColorWithRGBA64(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_SameColorWithNRGBA64(t *testing.T) {
 	img := image.NewNRGBA64(image.Rect(0, 0, 20, 20))
 	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -139,6 +148,7 @@ func Test_SameColorWithNRGBA64(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_SameColorWithGray(t *testing.T) {
 	img := image.NewGray(image.Rect(0, 0, 20, 20))
 	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -157,6 +167,7 @@ func Test_SameColorWithGray(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_SameColorWithGray16(t *testing.T) {
 	img := image.NewGray16(image.Rect(0, 0, 20, 20))
 	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -175,12 +186,14 @@ func Test_SameColorWithGray16(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.2].
 func Test_Bounds(t *testing.T) {
 	img := image.NewRGBA(image.Rect(20, 10, 200, 99))
 	out := Resize(80, 80, img, Lanczos2)
 	out.At(0, 0)
 }
 
+// Covers [ARCH-3.1].
 func Test_SameSizeReturnsOriginal(t *testing.T) {
 	img := image.NewRGBA(image.Rect(0, 0, 10, 10))
 	out := Resize(0, 0, img, Lanczos2)
@@ -196,6 +209,7 @@ func Test_SameSizeReturnsOriginal(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_PixelCoordinates(t *testing.T) {
 	checkers := image.NewGray(image.Rect(0, 0, 4, 4))
 	checkers.Pix = []uint8{
@@ -216,6 +230,7 @@ func Test_PixelCoordinates(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_ResizeWithPremultipliedAlpha(t *testing.T) {
 	img := image.NewRGBA(image.Rect(0, 0, 1, 4))
 	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -231,6 +246,7 @@ func Test_ResizeWithPremultipliedAlpha(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.4].
 func Test_ResizeWithTranslucentColor(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 1, 2))
 

@@ -91,6 +91,8 @@ func fuzzImage(kind uint8, w, h int, data []byte) image.Image {
 
 // FuzzResize checks that no input combination panics or hangs. Decoded images are adversarial, so
 // the invariant is "always returns an image with the requested size", not pixel equality.
+//
+// Covers [ARCH-3.2].
 func FuzzResize(f *testing.F) {
 	f.Add(uint8(0), uint8(8), uint8(8), uint8(4), uint8(4), uint8(2), []byte{1, 2, 3, 4})
 	f.Add(uint8(5), uint8(1), uint8(1), uint8(31), uint8(31), uint8(5), []byte{})

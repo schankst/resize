@@ -9,6 +9,7 @@ package resize
 
 import "image"
 
+// [ARCH-3.4] Saturating conversion used by the filtering loops.
 // Keep value in [0,255] range.
 func clampUint8(in int32) uint8 {
 	// casting a negative int to an uint will result in an overflown
@@ -23,6 +24,7 @@ func clampUint8(in int32) uint8 {
 	return 0
 }
 
+// [ARCH-3.4] Saturating conversion used by the filtering loops.
 // Keep value in [0,65535] range.
 func clampUint16(in int64) uint16 {
 	if uint64(in) < 65536 {
@@ -34,6 +36,7 @@ func clampUint16(in int64) uint16 {
 	return 0
 }
 
+// [ARCH-3.4] Generic 16-bit path for types without direct pixel access.
 func resizeGeneric(in image.Image, out *image.RGBA64, scale float64, coeffs []int32, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -83,6 +86,8 @@ func resizeGeneric(in image.Image, out *image.RGBA64, scale float64, coeffs []in
 	}
 }
 
+// [ARCH-3.4] Filtering loop, used for both passes ([ARCH-3.6]). The intermediate buffer is
+// transposed on purpose ([ARCH-3.5]).
 func resizeRGBA(in *image.RGBA, out *image.RGBA, scale float64, coeffs []int16, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -125,6 +130,7 @@ func resizeRGBA(in *image.RGBA, out *image.RGBA, scale float64, coeffs []int16, 
 	}
 }
 
+// [ARCH-3.4] Filtering loop with alpha premultiplication.
 func resizeNRGBA(in *image.NRGBA, out *image.RGBA, scale float64, coeffs []int16, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -176,6 +182,7 @@ func resizeNRGBA(in *image.NRGBA, out *image.RGBA, scale float64, coeffs []int16
 	}
 }
 
+// [ARCH-3.4] Filtering loop, used for both passes.
 func resizeRGBA64(in *image.RGBA64, out *image.RGBA64, scale float64, coeffs []int32, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -226,6 +233,7 @@ func resizeRGBA64(in *image.RGBA64, out *image.RGBA64, scale float64, coeffs []i
 	}
 }
 
+// [ARCH-3.4] Filtering loop with alpha premultiplication.
 func resizeNRGBA64(in *image.NRGBA64, out *image.RGBA64, scale float64, coeffs []int32, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -285,6 +293,7 @@ func resizeNRGBA64(in *image.NRGBA64, out *image.RGBA64, scale float64, coeffs [
 	}
 }
 
+// [ARCH-3.4] Filtering loop, used for both passes.
 func resizeGray(in *image.Gray, out *image.Gray, scale float64, coeffs []int16, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -317,6 +326,7 @@ func resizeGray(in *image.Gray, out *image.Gray, scale float64, coeffs []int16, 
 	}
 }
 
+// [ARCH-3.4] Filtering loop, used for both passes.
 func resizeGray16(in *image.Gray16, out *image.Gray16, scale float64, coeffs []int32, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.Bounds().Dx() - 1
@@ -353,6 +363,7 @@ func resizeGray16(in *image.Gray16, out *image.Gray16, scale float64, coeffs []i
 	}
 }
 
+// [ARCH-3.7] Filtering loop over streamed YCbCr rows.
 func resizeYCbCr(in yccRowSource, out *ycc, scale float64, coeffs []int16, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.width() - 1
@@ -392,6 +403,7 @@ func resizeYCbCr(in yccRowSource, out *ycc, scale float64, coeffs []int16, offse
 	}
 }
 
+// [ARCH-3.8] Nearest-neighbour loop over streamed YCbCr rows.
 func nearestYCbCr(in yccRowSource, out *ycc, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
 	maxX := in.width() - 1

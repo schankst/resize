@@ -15,6 +15,8 @@ import (
 )
 
 // TestResizeENilImage covers the nil guard for both entry points.
+//
+// Covers [ARCH-3.1].
 func TestResizeENilImage(t *testing.T) {
 	if _, err := ResizeE(8, 8, nil, Bilinear); !errors.Is(err, ErrNilImage) {
 		t.Fatalf("ResizeE error = %v, want ErrNilImage", err)
@@ -25,6 +27,8 @@ func TestResizeENilImage(t *testing.T) {
 }
 
 // TestResizeEPanicsOnInvalidInput documents that the compatibility wrappers still panic.
+//
+// Covers [ARCH-3.1].
 func TestResizeEPanicsOnInvalidInput(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -47,6 +51,8 @@ func TestResizeEPanicsOnInvalidInput(t *testing.T) {
 
 // TestResizeEInvalidDimensions covers dimensions that cannot be represented or allocated. Nothing
 // here may panic or attempt an allocation.
+//
+// Covers [ARCH-3.1].
 func TestResizeEInvalidDimensions(t *testing.T) {
 	img := image.NewRGBA(image.Rect(0, 0, 8, 8))
 
@@ -78,6 +84,8 @@ func TestResizeEInvalidDimensions(t *testing.T) {
 
 // TestResizeEMatchesResize verifies that the error-returning API is a drop-in for the panicking
 // one: same image, same pixels.
+//
+// Covers [ARCH-3.1].
 func TestResizeEMatchesResize(t *testing.T) {
 	directions := []struct {
 		name string
@@ -113,6 +121,8 @@ func TestResizeEMatchesResize(t *testing.T) {
 }
 
 // TestResizeEEdgeCases covers inputs that must not be treated as errors.
+//
+// Covers [ARCH-3.1].
 func TestResizeEEdgeCases(t *testing.T) {
 	empty := image.NewRGBA(image.Rect(0, 0, 0, 0))
 	if out, err := ResizeE(8, 8, empty, Bilinear); err != nil || out != image.Image(empty) {
@@ -144,6 +154,8 @@ func TestResizeEEdgeCases(t *testing.T) {
 }
 
 // TestThumbnailEMatchesThumbnail verifies parity and the unconstrained-max shortcut.
+//
+// Covers [ARCH-3.1].
 func TestThumbnailEMatchesThumbnail(t *testing.T) {
 	for _, c := range imageCases() {
 		t.Run(c.name, func(t *testing.T) {

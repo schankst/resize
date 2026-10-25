@@ -14,6 +14,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   existing call sites behave as before while new code can handle the cases. Includes the
   `ErrNilImage` and `ErrInvalidDimensions` sentinels and the `MaxDimension` limit, and
   `ThumbnailE` computes aspect ratios in `uint64` so huge `maxWidth`/`maxHeight` cannot wrap.
+- `docs/how-it-works.md`: a walk through the pipeline — entry and validation, type dispatch,
+  coefficient tables, the two convolution passes, the transposed intermediate buffer, YCbCr row
+  streaming, the nearest-neighbour path and the conversion back to `image.YCbCr` — with ASCII
+  diagrams. Sections are numbered `[ARCH-x.y]`, source and test comments reference those anchors, and
+  `TestDocAnchorsExist` fails if a reference has no matching heading.
 - `examples/resize`: a complete program that decodes, resizes and re-encodes an image, including
   flattening transparency for JPEG output. Built by CI as part of `go build ./...`.
 - `cmd/resize-measure`: reports peak RSS (`VmHWM`) and time for a resize scenario, so memory changes

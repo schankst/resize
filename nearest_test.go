@@ -8,6 +8,7 @@ package resize
 
 import "testing"
 
+// Covers [ARCH-3.8].
 func Test_FloatToUint8(t *testing.T) {
 	var testData = []struct {
 		in       float32
@@ -27,6 +28,7 @@ func Test_FloatToUint8(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.8].
 func Test_FloatToUint16(t *testing.T) {
 	var testData = []struct {
 		in       float32

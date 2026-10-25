@@ -20,6 +20,8 @@ import (
 //
 // Thumbnail panics if img is nil or the resulting dimensions cannot be allocated; use ThumbnailE
 // if you need to handle those cases as errors.
+//
+// [ARCH-3.1] Aspect-ratio-preserving entry point.
 func Thumbnail(maxWidth, maxHeight uint, img image.Image, interp InterpolationFunction) image.Image {
 	out, err := ThumbnailE(maxWidth, maxHeight, img, interp)
 	if err != nil {
@@ -30,6 +32,8 @@ func Thumbnail(maxWidth, maxHeight uint, img image.Image, interp InterpolationFu
 
 // ThumbnailE is like Thumbnail but reports invalid input instead of panicking. For every input
 // that Thumbnail can handle, the result is identical.
+//
+// [ARCH-3.1] Aspect-ratio-preserving entry point, returns errors.
 func ThumbnailE(maxWidth, maxHeight uint, img image.Image, interp InterpolationFunction) (image.Image, error) {
 	if img == nil {
 		return nil, ErrNilImage

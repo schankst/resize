@@ -21,6 +21,7 @@ type Image interface {
 	SubImage(image.Rectangle) image.Image
 }
 
+// Covers [ARCH-3.9].
 func TestImage(t *testing.T) {
 	testImage := []Image{
 		newYCC(image.Rect(0, 0, 10, 10), image.YCbCrSubsampleRatio420),
@@ -63,6 +64,7 @@ func yccFromYCbCr(m *image.YCbCr) *ycc {
 	return p
 }
 
+// Covers [ARCH-3.7].
 func TestConvertYCbCr(t *testing.T) {
 	testImage := []Image{
 		image.NewYCbCr(image.Rect(0, 0, 50, 50), image.YCbCrSubsampleRatio420),
@@ -131,6 +133,7 @@ func TestConvertYCbCr(t *testing.T) {
 	}
 }
 
+// Covers [ARCH-3.9].
 func TestYCbCr(t *testing.T) {
 	rects := []image.Rectangle{
 		image.Rect(0, 0, 16, 16),
