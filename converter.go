@@ -362,12 +362,13 @@ func resizeGray16(in *image.Gray16, out *image.Gray16, scale float64, coeffs []i
 	}
 }
 
-func resizeYCbCr(in *ycc, out *ycc, scale float64, coeffs []int16, offset []int, filterLength int) {
+func resizeYCbCr(in yccRowSource, out *ycc, scale float64, coeffs []int16, offset []int, filterLength int) {
 	newBounds := out.Bounds()
-	maxX := in.Bounds().Dx() - 1
+	maxX := in.width() - 1
+	scratch := make([]byte, 3*in.width())
 
 	for x := newBounds.Min.X; x < newBounds.Max.X; x++ {
-		row := in.Pix[x*in.Stride:]
+		row := in.yccRow(x, scratch)
 		for y := newBounds.Min.Y; y < newBounds.Max.Y; y++ {
 			var p [3]int32
 			var sum int32
@@ -400,12 +401,13 @@ func resizeYCbCr(in *ycc, out *ycc, scale float64, coeffs []int16, offset []int,
 	}
 }
 
-func nearestYCbCr(in *ycc, out *ycc, scale float64, coeffs []bool, offset []int, filterLength int) {
+func nearestYCbCr(in yccRowSource, out *ycc, scale float64, coeffs []bool, offset []int, filterLength int) {
 	newBounds := out.Bounds()
-	maxX := in.Bounds().Dx() - 1
+	maxX := in.width() - 1
+	scratch := make([]byte, 3*in.width())
 
 	for x := newBounds.Min.X; x < newBounds.Max.X; x++ {
-		row := in.Pix[x*in.Stride:]
+		row := in.yccRow(x, scratch)
 		for y := newBounds.Min.Y; y < newBounds.Max.Y; y++ {
 			var p [3]float32
 			var sum float32

@@ -59,6 +59,19 @@ func TestImage(t *testing.T) {
 	}
 }
 
+// yccFromYCbCr expands a YCbCr image into a full ycc buffer using the streaming row source. It
+// exists only for tests that need a ycc value to slice.
+func yccFromYCbCr(m *image.YCbCr) *ycc {
+	w, h := m.Bounds().Dx(), m.Bounds().Dy()
+	p := newYCC(image.Rect(0, 0, w, h), m.SubsampleRatio)
+	src := ycbcrRowSource{img: m}
+	buf := make([]byte, 3*w)
+	for y := 0; y < h; y++ {
+		copy(p.Pix[y*p.Stride:], src.yccRow(y, buf))
+	}
+	return p
+}
+
 func TestConvertYCbCr(t *testing.T) {
 	testImage := []Image{
 		image.NewYCbCr(image.Rect(0, 0, 50, 50), image.YCbCrSubsampleRatio420),
@@ -81,7 +94,7 @@ func TestConvertYCbCr(t *testing.T) {
 		}
 
 		// test conversion from YCbCr to ycc
-		yc := imageYCbCrToYCC(m)
+		yc := yccFromYCbCr(m)
 		for y := m.Rect.Min.Y; y < m.Rect.Max.Y; y++ {
 			for x := m.Rect.Min.X; x < m.Rect.Max.X; x++ {
 				ystride := 3 * (m.Rect.Max.X - m.Rect.Min.X)
@@ -191,7 +204,7 @@ func testYCbCr(t *testing.T, r image.Rectangle, subsampleRatio image.YCbCrSubsam
 		}
 	}
 
-	m := imageYCbCrToYCC(img)
+	m := yccFromYCbCr(img)
 
 	// Make various sub-images of m.
 	for y0 := delta.Y + 3; y0 < delta.Y+7; y0++ {

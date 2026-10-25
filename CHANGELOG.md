@@ -7,6 +7,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- YCbCr inputs are no longer expanded into a full-size interleaved `ycc` buffer (3 bytes per pixel
+  of the source) before filtering. Rows are expanded on demand while filtering, which removes the
+  largest single allocation of the package. Peak RSS for a 24 MP JPEG resized to 1200×800 drops from
+  125.6 MiB to 56.9 MiB, and from 737.7 MiB to 193.0 MiB with eight parallel calls. Pixel output is
+  unchanged, pinned by `testdata/ycbcr_golden.txt`.
+- The parallel pass over YCbCr sources is split along source rows instead of destination columns, so
+  each row is expanded exactly once.
+
+### Added
+
+- `cmd/resize-measure`: reports peak RSS (`VmHWM`) and time for a resize scenario, so memory changes
+  can be compared between checkouts. Documented in `docs/benchmarks.md`; not part of CI.
+
 ### Fixed
 
 - `Resize` no longer returns an empty image when the aspect-ratio calculation rounds a dimension

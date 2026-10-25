@@ -175,15 +175,14 @@ that exposes them.
 
 ### YCbCr
 
-JPEGs decode to `*image.YCbCr`. For these inputs the package converts the whole image into an
-interleaved `ycc` buffer (3 bytes per pixel) and always emits 4:4:4 output. That is fast and
-avoids chroma-subsampling artifacts, but it costs extra memory — roughly `3 × width × height`
-bytes on top of the decoded image.
+JPEGs decode to `*image.YCbCr`. Subsample ratios 4:4:4, 4:2:2, 4:2:0, 4:4:0, 4:1:1 and 4:1:0 are
+read row by row and never copied as a whole; output is always 4:4:4, so resizing cannot introduce
+chroma-subsampling artifacts. Peak memory stays close to the decoded image plus the destination.
 
 ### Memory and concurrency
 
 Each call allocates a transposed intermediate image and the result, so peak memory is roughly
-`source + 2 × destination` (more for `YCbCr`). Calls are independent and safe to run
+`source + 2 × destination`. Calls are independent and safe to run
 concurrently; each call fans out to `GOMAXPROCS` goroutines. When resizing many images in
 parallel, consider limiting your own worker count so the two levels of parallelism do not
 oversubscribe the CPU.

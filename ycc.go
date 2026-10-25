@@ -41,6 +41,68 @@ func (p *ycc) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
+// yccRow returns row y of the image as w*3 interleaved Y, Cb, Cr bytes. The returned slice aliases
+// Pix, so it must be treated as read-only.
+func (p *ycc) yccRow(y int, _ []byte) []byte {
+	w := p.Bounds().Dx()
+	start := (y - p.Rect.Min.Y) * p.Stride
+	return p.Pix[start : start+w*3]
+}
+
+func (p *ycc) width() int { return p.Bounds().Dx() }
+
+// yccRowSource yields one interleaved Y, Cb, Cr row at a time. Streaming the rows keeps the
+// resizing passes from materialising a full-size copy of a YCbCr image.
+type yccRowSource interface {
+	// yccRow returns row y (relative to the image origin) as width*3 interleaved bytes. The
+	// result may alias internal memory; callers must not modify it.
+	yccRow(y int, scratch []byte) []byte
+	// width reports the number of pixels per row.
+	width() int
+}
+
+// ycbcrRowSource reads rows straight out of an *image.YCbCr, expanding subsampled chroma on the
+// fly. It produces exactly the bytes imageYCbCrToYCC used to write into a full-size buffer.
+type ycbcrRowSource struct {
+	img *image.YCbCr
+}
+
+func (s ycbcrRowSource) width() int { return s.img.Bounds().Dx() }
+
+func (s ycbcrRowSource) yccRow(y int, scratch []byte) []byte {
+	m := s.img
+	w := m.Bounds().Dx()
+	if cap(scratch) < 3*w {
+		scratch = make([]byte, 3*w)
+	}
+	row := scratch[:3*w]
+
+	// Index math matches the old convertToYCC* helpers: offsets are relative to the image origin.
+	var cyShift, cxShift uint
+	switch m.SubsampleRatio {
+	case image.YCbCrSubsampleRatio422:
+		cxShift = 1
+	case image.YCbCrSubsampleRatio420:
+		cyShift, cxShift = 1, 1
+	case image.YCbCrSubsampleRatio440:
+		cyShift = 1
+	case image.YCbCrSubsampleRatio411:
+		cxShift = 2
+	case image.YCbCrSubsampleRatio410:
+		cyShift, cxShift = 1, 2
+	}
+
+	yy := y * m.YStride
+	cy := (y >> cyShift) * m.CStride
+	for x := 0; x < w; x++ {
+		ci := cy + (x >> cxShift)
+		row[x*3+0] = m.Y[yy+x]
+		row[x*3+1] = m.Cb[ci]
+		row[x*3+2] = m.Cr[ci]
+	}
+	return row
+}
+
 func (p *ycc) Bounds() image.Rectangle {
 	return p.Rect
 }
@@ -118,32 +180,6 @@ func (p *ycc) YCbCr() *image.YCbCr {
 		return p.ycbcr410(ycbcr)
 	}
 	return ycbcr
-}
-
-// imageYCbCrToYCC converts a YCbCr image to a ycc image for resizing.
-func imageYCbCrToYCC(in *image.YCbCr) *ycc {
-	w, h := in.Rect.Dx(), in.Rect.Dy()
-	p := ycc{
-		Pix:            make([]uint8, 3*w*h),
-		Stride:         3 * w,
-		Rect:           image.Rect(0, 0, w, h),
-		SubsampleRatio: in.SubsampleRatio,
-	}
-	switch in.SubsampleRatio {
-	case ycbcrSubsampleRatio422:
-		return convertToYCC422(in, &p)
-	case ycbcrSubsampleRatio420:
-		return convertToYCC420(in, &p)
-	case ycbcrSubsampleRatio440:
-		return convertToYCC440(in, &p)
-	case ycbcrSubsampleRatio444:
-		return convertToYCC444(in, &p)
-	case ycbcrSubsampleRatio411:
-		return convertToYCC411(in, &p)
-	case ycbcrSubsampleRatio410:
-		return convertToYCC410(in, &p)
-	}
-	return &p
 }
 
 func (p *ycc) ycbcr422(ycbcr *image.YCbCr) *image.YCbCr {
@@ -264,124 +300,4 @@ func (p *ycc) ycbcr410(ycbcr *image.YCbCr) *image.YCbCr {
 		}
 	}
 	return ycbcr
-}
-
-func convertToYCC422(in *image.YCbCr, p *ycc) *ycc {
-	var off int
-	Pix := p.Pix
-	Y := in.Y
-	Cb := in.Cb
-	Cr := in.Cr
-	for y := 0; y < in.Rect.Max.Y-in.Rect.Min.Y; y++ {
-		yy := y * in.YStride
-		cy := y * in.CStride
-		for x := 0; x < in.Rect.Max.X-in.Rect.Min.X; x++ {
-			ci := cy + x/2
-			Pix[off+0] = Y[yy+x]
-			Pix[off+1] = Cb[ci]
-			Pix[off+2] = Cr[ci]
-			off += 3
-		}
-	}
-	return p
-}
-
-func convertToYCC420(in *image.YCbCr, p *ycc) *ycc {
-	var off int
-	Pix := p.Pix
-	Y := in.Y
-	Cb := in.Cb
-	Cr := in.Cr
-	for y := 0; y < in.Rect.Max.Y-in.Rect.Min.Y; y++ {
-		yy := y * in.YStride
-		cy := (y / 2) * in.CStride
-		for x := 0; x < in.Rect.Max.X-in.Rect.Min.X; x++ {
-			ci := cy + x/2
-			Pix[off+0] = Y[yy+x]
-			Pix[off+1] = Cb[ci]
-			Pix[off+2] = Cr[ci]
-			off += 3
-		}
-	}
-	return p
-}
-
-func convertToYCC440(in *image.YCbCr, p *ycc) *ycc {
-	var off int
-	Pix := p.Pix
-	Y := in.Y
-	Cb := in.Cb
-	Cr := in.Cr
-	for y := 0; y < in.Rect.Max.Y-in.Rect.Min.Y; y++ {
-		yy := y * in.YStride
-		cy := (y / 2) * in.CStride
-		for x := 0; x < in.Rect.Max.X-in.Rect.Min.X; x++ {
-			ci := cy + x
-			Pix[off+0] = Y[yy+x]
-			Pix[off+1] = Cb[ci]
-			Pix[off+2] = Cr[ci]
-			off += 3
-		}
-	}
-	return p
-}
-
-func convertToYCC444(in *image.YCbCr, p *ycc) *ycc {
-	var off int
-	Pix := p.Pix
-	Y := in.Y
-	Cb := in.Cb
-	Cr := in.Cr
-	for y := 0; y < in.Rect.Max.Y-in.Rect.Min.Y; y++ {
-		yy := y * in.YStride
-		cy := y * in.CStride
-		for x := 0; x < in.Rect.Max.X-in.Rect.Min.X; x++ {
-			ci := cy + x
-			Pix[off+0] = Y[yy+x]
-			Pix[off+1] = Cb[ci]
-			Pix[off+2] = Cr[ci]
-			off += 3
-		}
-	}
-	return p
-}
-
-func convertToYCC411(in *image.YCbCr, p *ycc) *ycc {
-	var off int
-	Pix := p.Pix
-	Y := in.Y
-	Cb := in.Cb
-	Cr := in.Cr
-	for y := 0; y < in.Rect.Max.Y-in.Rect.Min.Y; y++ {
-		yy := y * in.YStride
-		cy := y * in.CStride
-		for x := 0; x < in.Rect.Max.X-in.Rect.Min.X; x++ {
-			ci := cy + x/4
-			Pix[off+0] = Y[yy+x]
-			Pix[off+1] = Cb[ci]
-			Pix[off+2] = Cr[ci]
-			off += 3
-		}
-	}
-	return p
-}
-
-func convertToYCC410(in *image.YCbCr, p *ycc) *ycc {
-	var off int
-	Pix := p.Pix
-	Y := in.Y
-	Cb := in.Cb
-	Cr := in.Cr
-	for y := 0; y < in.Rect.Max.Y-in.Rect.Min.Y; y++ {
-		yy := y * in.YStride
-		cy := (y / 2) * in.CStride
-		for x := 0; x < in.Rect.Max.X-in.Rect.Min.X; x++ {
-			ci := cy + x/4
-			Pix[off+0] = Y[yy+x]
-			Pix[off+1] = Cb[ci]
-			Pix[off+2] = Cr[ci]
-			off += 3
-		}
-	}
-	return p
 }

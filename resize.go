@@ -269,16 +269,18 @@ func resizeImage(width, height uint, scaleX, scaleY float64, img image.Image, in
 
 	case *image.YCbCr:
 		// 8-bit precision
-		// accessing the YCbCr arrays in a tight loop is slow.
-		// converting the image to ycc increases performance by 2x.
+		// Rows are expanded from the Y/Cb/Cr planes on demand instead of converting the whole
+		// image into a ycc buffer first: that copy used 3 bytes per pixel of the full source.
 		temp := newYCC(image.Rect(0, 0, input.Bounds().Dy(), int(width)), input.SubsampleRatio)
 		result := newYCC(image.Rect(0, 0, int(width), int(height)), image.YCbCrSubsampleRatio444)
 
 		coeffs, offset, filterLength := createWeights8(temp.Bounds().Dy(), taps, blur, scaleX, kernel)
-		in := imageYCbCrToYCC(input)
+		in := ycbcrRowSource{img: input}
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
-			slice := makeSlice(temp, i, cpus).(*ycc)
+			// Split along source rows (columns of the transposed buffer) so every source row is
+			// expanded exactly once instead of once per goroutine.
+			slice := makeColSlice(temp, i, cpus).(*ycc)
 			go func() {
 				defer wg.Done()
 				resizeYCbCr(in, slice, scaleX, coeffs, offset, filterLength)
@@ -517,10 +519,10 @@ func resizeNearest(width, height uint, scaleX, scaleY float64, img image.Image, 
 		result := newYCC(image.Rect(0, 0, int(width), int(height)), image.YCbCrSubsampleRatio444)
 
 		coeffs, offset, filterLength := createWeightsNearest(temp.Bounds().Dy(), taps, blur, scaleX)
-		in := imageYCbCrToYCC(input)
+		in := ycbcrRowSource{img: input}
 		wg.Add(cpus)
 		for i := 0; i < cpus; i++ {
-			slice := makeSlice(temp, i, cpus).(*ycc)
+			slice := makeColSlice(temp, i, cpus).(*ycc)
 			go func() {
 				defer wg.Done()
 				nearestYCbCr(in, slice, scaleX, coeffs, offset, filterLength)
@@ -716,4 +718,10 @@ type imageWithSubImage interface {
 
 func makeSlice(img imageWithSubImage, i, n int) image.Image {
 	return img.SubImage(image.Rect(img.Bounds().Min.X, img.Bounds().Min.Y+i*img.Bounds().Dy()/n, img.Bounds().Max.X, img.Bounds().Min.Y+(i+1)*img.Bounds().Dy()/n))
+}
+
+// makeColSlice is makeSlice's counterpart for column ranges.
+func makeColSlice(img imageWithSubImage, i, n int) image.Image {
+	b := img.Bounds()
+	return img.SubImage(image.Rect(b.Min.X+i*b.Dx()/n, b.Min.Y, b.Min.X+(i+1)*b.Dx()/n, b.Max.Y))
 }

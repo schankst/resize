@@ -67,6 +67,45 @@ benchstat old.txt new.txt
 | `BenchmarkThumbnail/Gray` | 2.36 | 96,968 | 20 |
 | `BenchmarkThumbnail/YCbCr420` | 3.26 | 1,096,698 | 24 |
 
+## Memory
+
+### How to measure
+
+`cmd/resize-measure` reports peak resident memory (`VmHWM` from `/proc/self/status`, Linux only)
+and wall time for one scenario:
+
+```bash
+go run ./cmd/resize-measure -src 6000x4000 -dst 1200x800 -type ycbcr420
+go run ./cmd/resize-measure -src 6000x4000 -dst 1200x800 -type ycbcr420 -parallel 8
+```
+
+Run the same command against two checkouts to compare. It is not part of CI; the numbers below were
+taken on the machine described above.
+
+### Before / after removing the full YCbCr copy
+
+The YCbCr path used to expand the whole source into an interleaved `ycc` buffer (3 bytes per pixel)
+before filtering. Rows are now expanded on demand while filtering, so only the transposed
+intermediate and the result remain.
+
+| Scenario | peak RSS before | peak RSS after | heap after | time before | time after |
+|---|---|---|---|---|---|
+| 6000×4000 YCbCr 4:2:0 → 1200×800 Lanczos3 | 125.6 MiB | **56.9 MiB** | 122.4 → 53.8 MiB | 304 ms | 237 ms |
+| same, 8 parallel calls | 737.7 MiB | **193.0 MiB** | 738.7 → 189.8 MiB | 2.64 s | 1.79 s |
+| 6000×4000 RGBA → 1200×800 Lanczos3 | 116.7 MiB | 116.8 MiB | unchanged | 231 ms | 231 ms |
+
+Allocation per operation for the 512×512 benchmark source dropped accordingly:
+
+| Benchmark | B/op before | B/op after |
+|---|---:|---:|
+| `YCbCr420/down-128x128/NearestNeighbor` | 1,086,481 | 306,134 |
+| `YCbCr420/down-128x128/Lanczos3` | 1,096,698 | 316,329 |
+| `YCbCr420/up-1024x1024/Lanczos3` | 8,692,733 | 7,912,365 |
+
+Output is unchanged: `testdata/ycbcr_golden.txt` pins pixel hashes for all six subsample ratios ×
+six kernels × four directions, and a one-off comparison of 108 further cases (97×61 source, up,
+down and extreme aspect ratios) produced identical hashes before and after.
+
 ## What the numbers say
 
 - **Kernel cost dominates.** `Lanczos3` is roughly 3–3.5× slower than `NearestNeighbor` and about

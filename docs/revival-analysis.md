@@ -170,6 +170,11 @@ Three effects cause this, all active at once:
 3. **No tiling/streaming:** there is no way to process an image in strips; every call needs the
    full buffer. No pooling, no reuse of the coefficient tables.
 
+**Addressed:** points 1 and 3 for YCbCr were fixed after this analysis. Rows are expanded on demand
+while filtering instead of building a `3 × w × h` copy, which halves peak RSS for JPEG inputs
+(see `docs/benchmarks.md`, "Before / after"). The transposed intermediate (point 2) is still there
+and is the remaining target.
+
 ### 5.2 gosec: 30× G115, no real security problem
 
 Every finding is a `uint16 -> uint8` or `int32 -> uint8` conversion in `clampUint8`/`clampUint16`
@@ -249,7 +254,7 @@ path `github.com/schankst/resize/v2` and corresponding `/v2` imports — the opp
 | Phase | Content | Status |
 |---|---|---|
 | P0 | `go.mod` with its own module path, tags up to `v1.0.3`, ISC title, CI (test/race/staticcheck/govulncheck/cross-compile), README, changelog, docs | **done** |
-| P1 | Panic/overflow hardening with an additive error API, memory reduction, benchmarks | in progress — benchmarks, tests and the error API are done, memory reduction open |
+| P1 | Panic/overflow hardening with an additive error API, memory reduction, benchmarks | done except the transposed intermediate buffer |
 | P2 | Configurable `blur` (functional options), fast Paletted/CMYK paths | open |
 | P3 | Documentation polish, evaluate the gamma question | open |
 
