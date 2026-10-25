@@ -101,7 +101,8 @@ func encode(path string, img image.Image) error {
 	case ".gif":
 		err = gif.Encode(f, img, nil)
 	default:
-		f.Close()
+		// Nothing was written, so a close error is not worth reporting.
+		_ = f.Close()
 		return fmt.Errorf("unsupported output extension %q: use .jpg, .png or .gif", filepath.Ext(path))
 	}
 

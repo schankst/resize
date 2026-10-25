@@ -39,6 +39,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- CI gained a `gofmt` job and pins `staticcheck` to 2026.2.2 instead of `@latest`, so a new
+  analyzer release can no longer turn CI red without a code change.
 - YCbCr inputs are no longer expanded into a full-size interleaved `ycc` buffer (3 bytes per pixel
   of the source) before filtering; rows are expanded on demand. Peak RSS for a 24 MP JPEG resized to
   1200×800 drops from 125.6 MiB to 56.9 MiB, and from 737.7 MiB to 193.0 MiB with eight parallel
