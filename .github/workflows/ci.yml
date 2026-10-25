@@ -76,15 +76,20 @@ jobs:
             goarch: arm
           - goos: windows
             goarch: arm64
-          # 32-bit ARM Windows was removed in Go 1.26; the package itself builds there on older
-          # toolchains, so it is excluded from the matrix rather than from the code.
           - goos: windows
             goarch: arm
+        # 32-bit ARM Windows (windows/arm) was dropped from the Go toolchain in Go 1.26.
+        # The package still builds there, so cover it with the last toolchain that supports it
+        # instead of silently losing the target.
+        include:
+          - goos: windows
+            goarch: arm
+            go: "1.25"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version: stable
+          go-version: ${{ matrix.go || 'stable' }}
           cache-dependency-path: go.mod
       - run: go build ./...
         env:
