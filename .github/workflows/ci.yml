@@ -17,10 +17,11 @@ jobs:
       matrix:
         go: ["1.18", "1.22", "stable"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
+          cache-dependency-path: go.mod
       - run: go build ./...
       - run: go vet ./...
       - run: go test -cover ./...
@@ -29,20 +30,22 @@ jobs:
     name: race
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache-dependency-path: go.mod
       - run: go test -race ./...
 
   staticcheck:
     name: staticcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache-dependency-path: go.mod
       - run: go install honnef.co/go/tools/cmd/staticcheck@latest
       - run: staticcheck ./...
 
@@ -50,10 +53,11 @@ jobs:
     name: govulncheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache-dependency-path: go.mod
       - run: go install golang.org/x/vuln/cmd/govulncheck@latest
       - run: govulncheck ./...
 
@@ -72,11 +76,16 @@ jobs:
             goarch: arm
           - goos: windows
             goarch: arm64
+          # 32-bit ARM Windows was removed in Go 1.26; the package itself builds there on older
+          # toolchains, so it is excluded from the matrix rather than from the code.
+          - goos: windows
+            goarch: arm
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache-dependency-path: go.mod
       - run: go build ./...
         env:
           GOOS: ${{ matrix.goos }}
