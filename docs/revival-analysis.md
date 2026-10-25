@@ -163,7 +163,20 @@ Der Fork ist **revival-fähig mit sehr geringem Aufwand** (~2–4 Dev-Tage agent
 
 ### Entscheidung zum Fork-Status
 
-Der Fork startet **privat** und wird vor dem ersten öffentlichen Release auf **public** gestellt. Ab dann ist er als Drop-in-Ersatz nutzbar (siehe README, Abschnitt „Drop-in replacement").
+Der Fork ist seit 2026-10-25 **public**, getaggt mit `v1.0.0` und über einen `replace`-Block
+verifiziert (Testmodul, das `github.com/nfnt/resize` importiert und gegen
+`github.com/schankst/resize v1.0.0` ersetzt — Build und Laufzeit OK über den Module Proxy).
+Ein direktes `go get github.com/schankst/resize` schlägt bewusst fehl, weil der Modulpfad
+`github.com/nfnt/resize` bleibt.
+
+### Umsetzungsstand (Stand 2026-10-25)
+
+| Phase | Inhalt | Status |
+|---|---|---|
+| P0 | `go.mod`, Tag `v1.0.0`, ISC-Titel, CI (test/race/staticcheck/govulncheck/cross-compile), README, Changelog, Doku | **erledigt** |
+| P1 | Panic-/Overflow-Härtung mit additiver Fehler-API, Speicherreduktion, Benchmarks | offen |
+| P2 | Konfigurierbares `blur` (funktionale Optionen), schnelle Paletted/CMYK-Pfade | offen |
+| P3 | Doku-Feinschliff, Gamma-Frage bewerten | offen |
 
 ---
 

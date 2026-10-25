@@ -154,8 +154,10 @@ require github.com/nfnt/resize v1.0.0
 replace github.com/nfnt/resize => github.com/schankst/resize v1.0.0
 ```
 
-Alternatively, `go get github.com/schankst/resize@v1.0.0` works if you import
-`github.com/schankst/resize` — but then the module path in your imports changes.
+The `replace` directive is required, not optional: the module declares its path as
+`github.com/nfnt/resize` on purpose, so `go get github.com/schankst/resize@v1.0.0` fails with
+`module declares its path as: github.com/nfnt/resize`. To depend on the fork without a `replace`,
+rename the module path in your own copy (and adjust every import).
 
 ## Alternatives
 
